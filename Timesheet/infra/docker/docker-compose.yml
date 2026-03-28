@@ -1,0 +1,81 @@
+version: '3.9'
+
+services:
+  # ── SQL Server (for local dev without existing MSSQL) ──────────────
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bim-sqlserver
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: BimTimesheet@2026!
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P BimTimesheet@2026! -Q "SELECT 1" || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 30s
+
+  # ── Redis (optional — for caching) ────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: bim-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  # ── API ───────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    container_name: bim-api
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      BIM_DB_SERVER: sqlserver
+      BIM_DB_NAME: cbimtech_TimeSheetWeb
+      BIM_DB_USER: sa
+      BIM_DB_PASSWORD: BimTimesheet@2026!
+      BIM_DB_TRUST_CERT: "true"
+      DMC_DB_SERVER: sqlserver
+      DMC_DB_NAME: cbimtech_dmc
+      DMC_DB_USER: sa
+      DMC_DB_PASSWORD: BimTimesheet@2026!
+      DMC_DB_TRUST_CERT: "true"
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      AI_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+      REDIS_ENABLED: "true"
+      CLIENT_URL: http://localhost
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  # ── Web (built static served by nginx) ────────────────────────────
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.web
+    container_name: bim-web
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+  redis_data:
