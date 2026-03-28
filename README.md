@@ -1,178 +1,146 @@
-# Claude Development Template
+# Raphael
 
-![Claude Development Template](.assets/cover.png)
-
-A bootstrapping template for software projects built with [Claude Code](https://claude.com/product/claude-code). Use it as a GitHub template, run **`/start`**, and Claude walks you through setting up all the documentation before a single line of code is written.
+> AI-powered project and task management system for engineering teams — Kanban, Gantt, Lean construction, and an intelligent advisor that tells you what to do next.
 
 ---
 
-## What This Is
+## Overview
 
-This repository is an opinionated project scaffold that gives Claude everything it needs to act as a coherent development team from day one:
+Raphael is a unified workspace designed for small engineering teams working across multiple disciplines — electromechanical engineering, BIM management, and software development. Named after the Great Sage advisor from *That Time I Got Reincarnated as a Slime*, it acts as an always-on intelligent advisor that keeps your team focused on the right work at the right time.
 
-- **Specialized agents** for each discipline (architecture, frontend, backend, design, database, QA, CI/CD, Docker, docs, copywriting & SEO)
-- **Living documentation** that agents keep up to date as the project evolves
-- **Git conventions** enforced through commit format, branch naming, and PR templates
-- **A product requirements document** that serves as the authoritative source of truth — protected from accidental edits
-- **A backlog** agents can reference when you ask "what should we work on next?"
+Without Raphael, engineering teams juggle tasks across disconnected tools — spreadsheets, whiteboards, chat threads — with no single source of truth and no system to surface what actually needs attention. Raphael solves this by combining Kanban boards, Gantt charts, Lean construction workflows (Last Planner System), and an AI advisor into one domain-aware platform.
+
+The system is built for daily use by the project owner and their small team, running on their own infrastructure (local and remote server).
 
 ---
 
-## How to Use
+## Tech Stack
 
-### 1. Create a new repository from this template
+| Layer | Technology | Notes |
+|-------|-----------|-------|
+| Frontend | React 18 + Vite, TypeScript | SPA with responsive layout |
+| Styling | Tailwind CSS | Utility-first, mobile-first |
+| Backend | Node.js 20 + Express, TypeScript | MVC pattern |
+| Database | MS SQL Server | Raw SQL via `mssql` driver |
+| Auth | JWT in httpOnly cookie | Stateless, XSS-safe (ADR-002) |
+| AI Advisor | Claude API + Ollama | Switchable via AI_PROVIDER env var (ADR-003) |
+| Hosting | Local dev + 103.27.60.66 | Self-hosted |
+| CI/CD | [TBD] | |
 
-Click **"Use this template"** → **"Create a new repository"** on GitHub.
+---
 
-Or with the GitHub CLI:
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20.x LTS (see `.nvmrc`)
+- npm 10+
+- MS SQL Server (local instance or connection to remote)
+- Git
+
+### Installation
 
 ```bash
-gh repo create my-project --template https://github.com/josipjelic/orchestrated-project-template --private --clone && cd my-project
+# Clone the repository
+git clone https://github.com/[org]/raphael.git
+cd raphael
+
+# Install all dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env.local
+# Edit .env.local and fill in required values
 ```
 
-### 2. Open it in Claude Code and run `/start`
+### Running Locally
 
-Claude will read `START_HERE.md` and begin the onboarding sequence — asking questions about your project and filling in all the documentation placeholders automatically.
-
-### 3. Start building
-
-Once onboarding is complete, `START_HERE.md` is deleted and the project is ready. Use `TODO.md` to see what to work on first.
-
----
-
-## Commands
-
-### `/start`
-
-Run once after creating a new project. Claude reads `START_HERE.md` and walks you through the full onboarding sequence — gathering project details, copying documentation templates into place, filling in every placeholder, and building the initial backlog from your requirements.
-
-### `/orchestrate <task description>`
-
-Hand off a multi-agent task and let Claude coordinate the execution. The orchestrator analyzes your task, identifies which specialists are needed, determines the correct execution order (parallel where safe, sequential where dependencies require it), registers the work in the backlog, creates a feature branch, and runs the agents wave by wave.
-
-```
-/orchestrate add user authentication with email and password
+```bash
+# Start both client and server in development mode
+npm run dev
 ```
 
-Presents a wave plan for your approval before anything runs. Stops and asks if a wave fails — never silently continues.
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001
 
-### `/sync-template`
+### Running Tests
 
-Pull the latest `.claude/` directory from the upstream template repository into your project. Useful when agents are improved, new commands are added, or documentation templates are updated.
+```bash
+# Unit tests (Vitest)
+npm test
 
-Shows a diff and asks for confirmation before changing anything. Local-only files are never deleted.
+# E2E tests (requires dev server running)
+npm run test:e2e
 
----
-
-## What's Inside
-
-```
-├── CLAUDE.md                     # Master Claude instructions (auto-loaded every session)
-├── PRD.md                        # Product Requirements Document — agents read, never modify
-├── TODO.md                       # Prioritized backlog — humans curate, agents consult
-├── README.template.md            # README template filled in during onboarding
-├── START_HERE.md                 # Onboarding protocol — deleted after setup
-├── .gitignore
-│
-├── .claude/
-│   ├── agents/                   # Specialist sub-agents
-│   │   ├── project-manager.md    # Backlog governance & agent coordination
-│   │   ├── systems-architect.md  # Architecture decisions & ADRs (Claude Opus)
-│   │   ├── frontend-developer.md # UI components & pages
-│   │   ├── backend-developer.md  # API endpoints & business logic
-│   │   ├── ui-ux-designer.md     # UX flows & design system specs
-│   │   ├── database-expert.md    # Schema design & migrations
-│   │   ├── qa-engineer.md        # Playwright E2E tests
-│   │   ├── documentation-writer.md # User guide & project docs
-│   │   ├── cicd-engineer.md      # GitHub Actions workflows & deployment pipelines
-│   │   ├── docker-expert.md      # Dockerfiles, Compose, image optimization
-│   │   └── copywriter-seo.md     # Conversion copy, brand voice, keyword strategy, technical SEO
-│   ├── commands/
-│   │   ├── start.md              # /start — runs the onboarding protocol
-│   │   └── sync-template.md      # /sync-template — pulls latest .claude/ from upstream
-│   └── templates/                # Blank doc templates — synced from upstream via /sync-template
-│       ├── CLAUDE.md             # Master Claude instructions template
-│       ├── PRD.md                # Product requirements template
-│       ├── README.md             # Project README template
-│       ├── docs/
-│       │   ├── technical/        # ARCHITECTURE.md, DECISIONS.md, API.md, DATABASE.md
-│       │   ├── user/             # USER_GUIDE.md
-│       │   └── content/          # CONTENT_STRATEGY.md
-│       └── .tasks/
-│           └── TASK_TEMPLATE.md  # Task file template
-│
-├── .github/
-│   └── PULL_REQUEST_TEMPLATE.md  # Enforces consistent PR descriptions
-│
-├── .tasks/                       # Detailed task files — one per TODO item
-│   └── TASK_TEMPLATE.md          # Copy this when creating new tasks
-│
-└── docs/                         # Created during onboarding from .claude/templates/
-    ├── user/USER_GUIDE.md        # How the system is used (user perspective)
-    ├── technical/
-    │   ├── ARCHITECTURE.md       # System design & component overview
-    │   ├── API.md                # API reference (updated after every endpoint)
-    │   ├── DATABASE.md           # Schema, migrations, query patterns
-    │   └── DECISIONS.md          # Architecture Decision Records (ADR log)
-    └── content/
-        └── CONTENT_STRATEGY.md   # Brand voice, keyword targets, copy library, technical SEO specs
+# Type checking
+npm run typecheck
 ```
 
 ---
 
-## Agents
+## Project Structure
 
-Each agent is a specialist Claude sub-agent with a defined role, document ownership, and working protocol.
-
-| Agent | Model | Responsibility | Owns |
-|-------|-------|----------------|------|
-| `project-manager` | Sonnet | Backlog governance, sprint planning, agent coordination | `TODO.md` |
-| `systems-architect` | Opus | High-level design, tech decisions, ADRs | `ARCHITECTURE.md`, `DECISIONS.md` |
-| `frontend-developer` | Sonnet | UI components, pages, client-side logic | Frontend section of `ARCHITECTURE.md` |
-| `backend-developer` | Sonnet | API endpoints, business logic, integrations | `API.md` |
-| `ui-ux-designer` | Sonnet | UX flows, design system, accessibility specs | Design System section of `ARCHITECTURE.md` |
-| `database-expert` | Sonnet | Schema design, migrations, query optimization | `DATABASE.md` |
-| `qa-engineer` | Sonnet | Playwright E2E tests, test strategy | `tests/e2e/` |
-| `documentation-writer` | Haiku | User guide, README updates | `USER_GUIDE.md` |
-| `cicd-engineer` | Sonnet | GitHub Actions workflows, deployments, branch protection, release automation | `.github/workflows/`, `CICD.md` |
-| `docker-expert` | Sonnet | Dockerfiles, docker-compose, image optimization, container networking | `Dockerfile*`, `docker-compose*.yml`, `DOCKER.md` |
-| `copywriter-seo` | Sonnet | Conversion copy, brand voice, keyword strategy, on-page SEO, structured data specs | `docs/content/CONTENT_STRATEGY.md` |
-
-Claude selects agents automatically based on context, or you can invoke them directly.
+```
+raphael/
+├── client/                  # React + Vite frontend
+│   └── src/
+│       ├── components/      # Shared UI components
+│       ├── features/        # Feature modules (kanban, gantt, dashboard, etc.)
+│       ├── pages/           # Route-level pages
+│       └── lib/             # Utilities, hooks, API client
+├── server/                  # Node.js + Express backend
+│   └── src/
+│       ├── controllers/     # Route controllers
+│       ├── services/        # Business logic
+│       ├── models/          # SQL query functions
+│       ├── middleware/       # Auth, validation, error handling
+│       └── routes/          # Express routers
+├── tests/
+│   └── e2e/                 # Playwright E2E tests
+├── docs/
+│   ├── user/                # User-facing documentation
+│   └── technical/           # Architecture, API, database, decisions
+├── PRD.md                   # Product requirements (source of truth)
+├── TODO.md                  # Project backlog
+└── CLAUDE.md                # Claude AI instructions
+```
 
 ---
 
-## Key Conventions
+## Environment Variables
 
-**Commits** — [Conventional Commits](https://www.conventionalcommits.org/):
-```
-feat(auth): add OAuth2 login with Google
-fix(api): handle null response from payment provider
-```
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DB_SERVER` | Yes | MS SQL Server hostname or IP |
+| `DB_PORT` | Yes | SQL Server port (default 1433) |
+| `DB_NAME` | Yes | Database name |
+| `DB_USER` | Yes | Database username |
+| `DB_PASSWORD` | Yes | Database password |
+| `SESSION_SECRET` | Yes | Secret key for session signing |
+| `AI_API_KEY` | Yes | Anthropic API key (when AI_PROVIDER=anthropic) |
+| `AI_PROVIDER` | Yes | AI provider: `anthropic` (default) or `ollama` |
+| `OLLAMA_URL` | No | Ollama base URL (when AI_PROVIDER=ollama, default http://localhost:11434) |
+| `PORT` | No | Server port (default 3001) |
+| `CLIENT_URL` | No | Frontend URL for CORS (default http://localhost:5173) |
 
-**Branches**:
-```
-feature/<ticket-id>-short-description
-fix/<ticket-id>-short-description
-```
-
-**PRD is read-only** — `PRD.md` is protected by a three-layer mechanism (warning block, CLAUDE.md rule, and agent system prompts). Agents will refuse to modify it without explicit human instruction.
-
-**Documentation stays current** — Agents are required to update the relevant `docs/` file before marking any implementation task complete.
+See `.env.example` for all available variables.
 
 ---
 
-## Design Principles
+## Deployment
 
-- **Design before code** — the Systems Architect agent produces specs and ADRs; specialists implement
-- **Copy before implementation** — the Copywriter & SEO agent defines page copy, CTAs, and keyword targets before @frontend-developer builds marketing pages
-- **Document ownership** — every `docs/` file has a declared owner agent; others don't overwrite
-- **Append-only ADRs** — architectural decisions are never silently revised; a new ADR supersedes an old one
-- **Tests map to requirements** — QA writes tests against FR-XXX items in the PRD, not implementation details
-- **TODO.md is human territory** — agents read the backlog to suggest work; they never auto-modify it
+The application is self-hosted. Deploy to the remote server at `103.27.60.66`.
+
+```bash
+# Production build
+npm run build
+
+# Start production server
+npm start
+```
 
 ---
 
 ## License
 
-[MIT](LICENSE)
+Proprietary — all rights reserved.
