@@ -33,9 +33,11 @@ Implement the login page and session management in the React frontend. On succes
 ## Technical Notes
 
 - Depends on task #004 (frontend scaffold) and task #005 (auth API)
-- Auth state held in React context — `useAuth()` hook consumed by protected routes
-- React Query mutation for the login call
-- Use React Router `<Navigate>` for redirects on protected routes
+- Auth state held in **Zustand** store (`useAuthStore`) with `persist` middleware — NOT React context (decided during #004 reuse analysis)
+- TanStack Query mutation for the login call (`useMutation`)
+- Use **TanStack Router** redirect for protected routes (pending ADR-006 from task #004) — NOT React Router `<Navigate>`
+- JWT stored in httpOnly cookie named `token` (per ADR-002) — the Axios client in `client/src/lib/api.ts` handles 401 auto-refresh transparently
+- Login page design spec: see `docs/technical/WIREFRAMES.md` (dark theme, command-center aesthetic)
 
 ## History
 

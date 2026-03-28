@@ -10,7 +10,7 @@ Read by: @frontend-developer (to know what endpoints to call and their contracts
 # API Reference
 
 > **Base URL**: `http://103.27.60.66/api/v1` (production) · `http://localhost:3001/api/v1` (local)
-> **Authentication**: Session token in `Authorization` header (Bearer) or httpOnly cookie (TBD — see Open Question #1 in PRD.md)
+> **Authentication**: JWT stored in an `httpOnly`, `SameSite=Strict` cookie named `token` (set on login). Also accepted via `Authorization: Bearer <token>` header for API clients. See ADR-002.
 > **Content-Type**: `application/json` for all requests and responses
 > **Last updated**: 2026-03-28
 
@@ -20,12 +20,17 @@ Read by: @frontend-developer (to know what endpoints to call and their contracts
 
 ### How to Authenticate
 
-Include the session token in every request:
+The preferred method is the **httpOnly cookie** `token`, set automatically by `POST /auth/login`. Browser clients receive this automatically — no manual handling needed.
+
+API clients (scripts, mobile apps) may alternatively include the token in the `Authorization` header:
+
 ```
 Authorization: Bearer <token>
 ```
 
-Tokens are obtained via the login endpoint and expire after 30 days of inactivity.
+When both the cookie and the header are present, the cookie takes precedence.
+
+Tokens expire after **30 days**. After expiry the server returns `401 UNAUTHENTICATED` and the client should redirect to the login page.
 
 ### Obtaining a Token
 
@@ -71,13 +76,98 @@ All error responses follow this structure:
 ### Auth
 
 #### POST /auth/login
-Authenticate with username and password. Returns a session token. *(FR-001)*
+
+**Auth required**: No
+**Description**: Authenticate with username and password. On success, sets an `httpOnly` cookie named `token` containing the signed JWT. The token is not returned in the response body. *(FR-001)*
+
+**Request body**:
+```json
+{
+  "username": "string — login identifier (min 1 char)",
+  "password": "string — plaintext password (min 1 char)"
+}
+```
+
+**Response 200**:
+```json
+{
+  "user": {
+    "id": "number — user primary key",
+    "username": "string",
+    "displayName": "string",
+    "role": "string — admin | manager | member",
+    "isActive": "boolean"
+  }
+}
+```
+
+Sets cookie: `token=<jwt>; HttpOnly; SameSite=Strict; Max-Age=2592000` (30 days)
+
+**Error codes**:
+- `422` — Validation error (missing username or password)
+- `401` — Invalid username or password (same message for both cases — no enumeration)
+
+---
 
 #### POST /auth/logout
-Invalidate the current session token. *(FR-001)*
+
+**Auth required**: Yes
+**Description**: Clears the `token` cookie. Because JWTs are stateless, there is no server-side session to invalidate — clearing the cookie is sufficient for browser clients. *(FR-001)*
+
+**Request body**: None
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Not authenticated
+
+---
+
+#### GET /auth/me
+
+**Auth required**: Yes
+**Description**: Returns the authenticated user's profile. Useful for bootstrapping the client after a page refresh.
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "user": {
+    "id": "number",
+    "username": "string",
+    "displayName": "string",
+    "role": "string — admin | manager | member",
+    "isActive": "boolean"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `404` — User no longer exists (account deactivated after token issued)
+
+---
 
 #### PATCH /auth/password
-Change the authenticated user's password. *(FR-005)*
+
+**Auth required**: Yes
+**Description**: Changes the authenticated user's password. The current password must be verified before the new one is accepted. *(FR-005)*
+
+**Request body**:
+```json
+{
+  "currentPassword": "string — the user's existing password (min 1 char)",
+  "newPassword": "string — the replacement password (min 8 chars)"
+}
+```
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Current password is incorrect, or not authenticated
+- `404` — User not found
+- `422` — Validation error (missing fields, new password too short)
 
 ---
 
@@ -193,4 +283,5 @@ Ask the AI advisor a natural language question about project status. *(FR-083)*
 
 | Date | Change |
 |------|--------|
+| 2026-03-28 | Auth endpoints implemented — POST /auth/login, POST /auth/logout, GET /auth/me, PATCH /auth/password |
 | 2026-03-28 | Initial API surface definition — planned endpoints from PRD.md |

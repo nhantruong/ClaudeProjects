@@ -24,6 +24,8 @@ Read by: All agents. Check this file before proposing changes that may conflict 
 | ADR-002 | Authentication — JWT in httpOnly cookies | Accepted | 2026-03-28 |
 | ADR-003 | AI provider — Claude API (primary) + Ollama (local fallback) | Accepted | 2026-03-28 |
 | ADR-004 | Real-time updates — React Query polling for v1 | Accepted | 2026-03-28 |
+| ADR-005 | Auth state management — Zustand with persist (not React context) | Accepted | 2026-03-28 |
+| ADR-006 | Frontend router — TanStack Router over React Router v6 | Accepted | 2026-03-28 |
 | ADR-005 | Package manager — npm (single package, no monorepo) | Accepted | 2026-03-28 |
 
 ---
@@ -141,6 +143,60 @@ Use **React Query `refetchInterval`** (30-second polling) on the dashboard, Kanb
 - **Positive**: Zero additional infrastructure. Works reliably behind any proxy or firewall. Trivial to implement.
 - **Negative**: Up to 30 seconds before another user's change appears. Not truly real-time.
 - **Neutral**: React Query's background refetch is invisible to users when tab is in focus.
+
+---
+
+## ADR-005: Auth State Management — Zustand with Persist (Not React Context)
+
+**Date**: 2026-03-28
+**Status**: Accepted
+**Deciders**: @frontend-developer (transplant decision during task #004)
+
+### Context
+
+The original architecture spec described using React context for global auth state (authenticated user, role). During task #004 the existing Timesheet app was identified as a reuse source. That app uses Zustand with the `persist` middleware, which stores auth state to `localStorage` and rehydrates it on page load. This is a more capable solution than React context.
+
+### Options Considered
+
+1. **React context** *(original spec)*: Standard React pattern, no extra library. Cons: loses state on page refresh (requires token re-validation on every load), more boilerplate to implement auth guard logic cleanly.
+2. **Zustand with `persist`** *(chosen)*: Auth state survives page refresh via localStorage. `useAuthStore.getState()` allows synchronous reads outside of React components (needed in Axios interceptors and route `beforeLoad` guards). Matches the Timesheet app pattern, enabling direct transplant.
+
+### Decision
+
+Use **Zustand** (`create` + `persist` middleware) for auth state. Store key: `raphael-auth`. Persisted fields: `user`, `accessToken`, `isAuthenticated`. The `logout()` action clears all three. Synchronous reads via `useAuthStore.getState()` are used in the Axios 401 interceptor and TanStack Router `beforeLoad` guards — this is not possible with React context.
+
+### Consequences
+
+- **Positive**: Auth state survives page refresh without an extra network round-trip. Route guards work synchronously. Axios interceptor can read the token outside React. Direct transplant from Timesheet app reduces implementation time.
+- **Negative**: Adds Zustand as a dependency (already listed for other state purposes, so no net addition). localStorage is readable by JS — only a concern if XSS is possible; mitigated by not storing sensitive data beyond the access token which is short-lived.
+- **Neutral**: The original spec's mention of React context for auth is superseded by this decision.
+
+---
+
+## ADR-006: Frontend Router — TanStack Router over React Router v6
+
+**Date**: 2026-03-28
+**Status**: Accepted
+**Deciders**: @frontend-developer (transplant decision during task #004)
+
+### Context
+
+The original architecture spec specified React Router v6. Task #004 identified the Timesheet app (reuse source) as using TanStack Router v1 with code-based route definitions. A decision was required before implementing routing.
+
+### Options Considered
+
+1. **React Router v6** *(original spec)*: Widely documented, large community. Cons: does not match the Timesheet app; no transplant advantage; `beforeLoad` auth guard pattern is different from TanStack Router.
+2. **TanStack Router v1** *(chosen)*: Already used in the Timesheet app. Has first-class TypeScript route typing, synchronous `beforeLoad` hooks that integrate cleanly with Zustand's `getState()` for auth guards, and type-safe `redirect()`. Code-based (not file-based) routing is simpler to understand for a new codebase.
+
+### Decision
+
+Use **TanStack Router v1** for all client-side routing. Route definitions live in `client/src/router.tsx`. Auth guards use `beforeLoad` with `useAuthStore.getState().isAuthenticated` — synchronous, no async needed. The router is registered in the `@tanstack/react-router` module augmentation so all `Link` and `redirect` calls are fully typed.
+
+### Consequences
+
+- **Positive**: Full TypeScript type safety on routes, params, and redirects. Auth guard pattern is clean and synchronous. Transplant from Timesheet app is straightforward — same API surface.
+- **Negative**: TanStack Router has a smaller community than React Router; some questions may be harder to find answers to. Team must learn TanStack Router patterns.
+- **Neutral**: File-based routing (the more popular TanStack Router pattern) is not used — code-based routing is simpler for this project size.
 
 ---
 

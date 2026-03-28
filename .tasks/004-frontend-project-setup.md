@@ -1,14 +1,14 @@
 ---
 id: "004"
 title: "Set up React + Vite frontend project structure"
-status: "todo"
+status: "done"
 area: "frontend"
 agent: "@frontend-developer"
 priority: "high"
 created_at: "2026-03-28"
 due_date: null
 started_at: null
-completed_at: null
+completed_at: "2026-03-28"
 prd_refs: ["FR-090", "FR-091"]
 blocks: ["006", "011", "012", "013", "014", "015", "017", "019"]
 blocked_by: ["002"]
@@ -67,19 +67,19 @@ The scaffold can start immediately using placeholder Tailwind color tokens. Do n
 
 ## Acceptance Criteria
 
-- [ ] `client/` directory created with Vite + React + TypeScript template
-- [ ] Tailwind CSS configured
-- [ ] Router set up with a root layout and placeholder routes for: `/`, `/projects`, `/login` (router choice documented as ADR-006)
-- [ ] TanStack React Query provider set up at app root
-- [ ] `client/src/lib/api.ts` — Axios client that reads `VITE_API_URL` from env, includes 401 handling
-- [ ] `client/src/lib/stores/auth.ts` — Zustand store with persist for auth state
-- [ ] Folder structure matches ARCHITECTURE.md: `components/`, `features/`, `pages/`, `lib/`
-- [ ] Basic shell layout: sidebar with nav links, main content area, responsive (collapses to bottom nav on mobile)
-- [ ] ESLint + Prettier configured (shared config with server if possible)
-- [ ] `npm run dev` starts Vite dev server at `localhost:5173`
-- [ ] `npm run build` produces static build in `client/dist/`
-- [ ] `npm run typecheck` passes with no errors
-- [ ] Router and auth state decisions documented as ADR-006 in `docs/technical/DECISIONS.md`
+- [x] `client/` directory created with Vite + React + TypeScript template
+- [x] Tailwind CSS configured
+- [x] Router set up with a root layout and placeholder routes for: `/`, `/projects`, `/login` (router choice documented as ADR-006)
+- [x] TanStack React Query provider set up at app root
+- [x] `client/src/lib/api.ts` — Axios client that reads `VITE_API_URL` from env, includes 401 handling
+- [x] `client/src/lib/stores/auth.ts` — Zustand store with persist for auth state
+- [x] Folder structure matches ARCHITECTURE.md: `components/`, `features/`, `pages/`, `lib/`
+- [x] Basic shell layout: sidebar with nav links, main content area, responsive (collapses to bottom nav on mobile)
+- [x] ESLint + Prettier configured (shared config with server if possible)
+- [x] `npm run dev` starts Vite dev server at `localhost:5173`
+- [x] `npm run build` produces static build in `client/dist/`
+- [x] `npm run typecheck` passes with no errors
+- [x] Router and auth state decisions documented as ADR-005 + ADR-006 in `docs/technical/DECISIONS.md`
 
 ## Technical Notes
 
@@ -102,3 +102,4 @@ The scaffold can start immediately using placeholder Tailwind color tokens. Do n
 |------|--------------|-------|
 | 2026-03-28 | human | Task created during onboarding |
 | 2026-03-28 | human | Existing Timesheet codebase and CurrentDb databases identified for reuse — task updated |
+| 2026-03-28 | @frontend-developer | Scaffold transplanted from Timesheet app — TanStack Router, Zustand, Axios, AppShell in place |

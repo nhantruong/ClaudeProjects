@@ -7,23 +7,18 @@
 
 ## In Progress
 
-*(nothing in progress)*
+- [ ] #004 — Set up React + Vite frontend project structure (TypeScript, Tailwind, TanStack Router, TanStack Query) [area: frontend] → [.tasks/004-frontend-project-setup.md](.tasks/004-frontend-project-setup.md)
+- [ ] #005 — Implement authentication API (login, logout, password change, session validation) [area: backend] → [.tasks/005-auth-api.md](.tasks/005-auth-api.md)
 
 ---
 
 ## Up Next (prioritized)
 
-- [ ] #001 — Design and document full database schema for all entities [area: database] → [.tasks/001-database-schema-design.md](.tasks/001-database-schema-design.md)
-- [ ] #002 — Design UI/UX wireframes for core views: dashboard, kanban, gantt, task detail [area: design] → [.tasks/002-ux-wireframes-core-views.md](.tasks/002-ux-wireframes-core-views.md)
-- [ ] #003 — Set up Node.js + Express backend project structure (TypeScript, MVC, mssql) [area: backend] → [.tasks/003-backend-project-setup.md](.tasks/003-backend-project-setup.md)
-- [ ] #004 — Set up React + Vite frontend project structure (TypeScript, Tailwind, React Query, React Router) [area: frontend] → [.tasks/004-frontend-project-setup.md](.tasks/004-frontend-project-setup.md)
+- [ ] #006 — Implement authentication UI (login page, session management) [area: frontend] → [.tasks/006-auth-ui.md](.tasks/006-auth-ui.md)
 
 ---
 
 ## Backlog
-
-- [ ] #005 — Implement authentication API (login, logout, password change, session validation) [area: backend] → [.tasks/005-auth-api.md](.tasks/005-auth-api.md)
-- [ ] #006 — Implement authentication UI (login page, session management) [area: frontend] → [.tasks/006-auth-ui.md](.tasks/006-auth-ui.md)
 - [ ] #007 — Implement user management API (create, list, update, deactivate — admin only) [area: backend] → [.tasks/007-user-management-api.md](.tasks/007-user-management-api.md)
 - [ ] #008 — Implement project CRUD API (create, list, get, update, delete, members) [area: backend] → [.tasks/008-project-api.md](.tasks/008-project-api.md)
 - [ ] #009 — Implement task CRUD API (create, list, get, update, delete, comments, subtasks, dependencies) [area: backend] → [.tasks/009-task-api.md](.tasks/009-task-api.md)
@@ -45,6 +40,9 @@
 ## Completed
 
 - [x] #000 — Initial project setup and template configuration → [.tasks/000-initial-project-setup.md](.tasks/000-initial-project-setup.md)
+- [x] #001 — Design and document full database schema for all entities [area: database] → [.tasks/001-database-schema-design.md](.tasks/001-database-schema-design.md)
+- [x] #002 — Design UI/UX wireframes for core views: dashboard, kanban, gantt, task detail [area: design] → [.tasks/002-ux-wireframes-core-views.md](.tasks/002-ux-wireframes-core-views.md)
+- [x] #003 — Set up Node.js + Express backend project structure (TypeScript, MVC, mssql) [area: backend] → [.tasks/003-backend-project-setup.md](.tasks/003-backend-project-setup.md)
 
 ---
 

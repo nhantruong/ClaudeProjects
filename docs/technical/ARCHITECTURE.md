@@ -59,21 +59,22 @@ The AI advisor ("Raphael") is implemented as a backend service that calls an ext
 
 ### Frontend Architecture
 
-The frontend is a React 18 SPA built with Vite. Routing is handled client-side with React Router. Server state is managed with React Query (TanStack Query) for caching and synchronization with the API. Local UI state uses React's built-in `useState` / `useReducer`.
+The frontend is a React 19 SPA built with Vite 6. Routing is handled client-side with TanStack Router v1 (see ADR-006). Server state is managed with React Query v5 (TanStack Query) for caching, polling (30s interval per ADR-004), and synchronization with the API. Auth state uses Zustand with `persist` middleware (see ADR-005).
 
-**Routing**: React Router v6 — page components in `client/src/pages/`
+**Routing**: TanStack Router v1 — route tree defined in `client/src/router.tsx`. `beforeLoad` hooks enforce auth guards synchronously using `useAuthStore.getState()`.
 
 **State management**:
-- React Query for all server data (tasks, projects, users)
-- React context for global UI state (auth user, theme)
-- Local `useState` for component-level state
+- React Query for all server data (tasks, projects, users, dashboard)
+- Zustand (`useAuthStore`) for auth state — persisted to localStorage, survives page refresh
+- Local `useState` / `useReducer` for component-level UI state
 
 **Component structure**:
 ```
 client/src/
-  components/         # Primitive UI elements (Button, Input, Modal, Badge, etc.)
+  components/
+    layout/           # AppShell, Sidebar, TopBar, BottomNav
   features/
-    kanban/           # Kanban board view and drag-drop logic
+    kanban/           # Kanban board view and drag-drop logic (@dnd-kit)
     gantt/            # Gantt chart rendering
     dashboard/        # Dashboard widgets and Raphael briefing panel
     tasks/            # Task detail, task form, subtasks
@@ -82,14 +83,25 @@ client/src/
     advisor/          # Raphael AI advisor chat/panel
     auth/             # Login page, session management
     team/             # User management (admin only)
-  pages/              # Route-level page components
+  pages/              # Route-level page components (lazy-loaded)
   lib/
-    api.ts            # Typed API client (fetch wrapper)
-    hooks/            # Shared custom hooks
-    utils/            # Format helpers, date utils
+    api.ts            # Axios instance with Bearer token + 401 auto-refresh
+    stores/auth.ts    # Zustand auth store with persist
+    utils.ts          # cn(), formatDate(), formatRelativeDate(), getInitials()
+  types/
+    index.ts          # Shared TypeScript types (AuthUser, Project, Task, etc.)
+  styles/
+    globals.css       # Tailwind directives + base layer overrides
 ```
 
-**Data fetching pattern**: React Query for all API calls. Mutations optimistically update the cache.
+**AppShell responsive layout** (three breakpoints):
+- Desktop (≥1280px): Fixed sidebar 240px expanded / 64px collapsed + top bar
+- Tablet (768px–1279px): Slide-over drawer (280px) triggered by hamburger button
+- Mobile (<768px): Fixed bottom nav bar (56px) + full-width content area
+
+**Data fetching pattern**: React Query for all API calls. `staleTime: 30s`, `refetchInterval: 30s` on dashboard and board queries (ADR-004). Mutations optimistically update the cache.
+
+**Scaffold completed**: 2026-03-28 (task #004). Design tokens from WIREFRAMES.md are wired into `tailwind.config.ts` — surface layers, teal accent, border, text, status, error, warning, and neutral scales.
 
 ---
 
