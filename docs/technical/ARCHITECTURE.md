@@ -103,6 +103,16 @@ client/src/
 
 **Scaffold completed**: 2026-03-28 (task #004). Design tokens from WIREFRAMES.md are wired into `tailwind.config.ts` — surface layers, teal accent, border, text, status, error, warning, and neutral scales.
 
+**Auth UI implemented**: 2026-03-28 (task #006).
+
+- `client/src/lib/api/auth.api.ts` — typed wrappers (`login`, `logout`, `getMe`, `changePassword`) over the Axios helpers in `api.ts`
+- `client/src/pages/LoginPage.tsx` — full login form: controlled inputs, Zod client-side validation, `useMutation` for the API call, password show/hide toggle, inline error display, loading spinner, redirect on success via TanStack Router `useNavigate`
+- `client/src/pages/AccountSettingsPage.tsx` — password change form at `/settings`: three-field form with Zod validation (min 8 chars, confirm match), `useMutation`, inline error and success states
+- `client/src/components/layout/TopBar.tsx` — logout updated to call the typed `logout()` API function and navigate via TanStack Router instead of `window.location.href`; settings link navigates to `/settings`
+- `client/src/router.tsx` — `/settings` route added (protected, `requireAuth` guard); lazy-loads `AccountSettingsPage`
+
+**Auth mutation pattern**: All auth mutations use TanStack Query `useMutation`. No `useEffect` data fetching. Zod validates inputs client-side before the API call — field errors are shown inline with `role="alert"`. Server errors (wrong credentials, wrong current password) are shown inline below the form, never as toasts.
+
 ---
 
 ### Backend Architecture

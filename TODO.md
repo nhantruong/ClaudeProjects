@@ -14,15 +14,14 @@
 
 ## Up Next (prioritized)
 
-- [ ] #006 — Implement authentication UI (login page, session management) [area: frontend] → [.tasks/006-auth-ui.md](.tasks/006-auth-ui.md)
-
----
-
-## Backlog
 - [ ] #007 — Implement user management API (create, list, update, deactivate — admin only) [area: backend] → [.tasks/007-user-management-api.md](.tasks/007-user-management-api.md)
 - [ ] #008 — Implement project CRUD API (create, list, get, update, delete, members) [area: backend] → [.tasks/008-project-api.md](.tasks/008-project-api.md)
 - [ ] #009 — Implement task CRUD API (create, list, get, update, delete, comments, subtasks, dependencies) [area: backend] → [.tasks/009-task-api.md](.tasks/009-task-api.md)
 - [ ] #010 — Implement dashboard API (summary endpoint for all dashboard data) [area: backend] → [.tasks/010-dashboard-api.md](.tasks/010-dashboard-api.md)
+
+---
+
+## Backlog
 - [ ] #011 — Implement project management UI (project list, create/edit project, members) [area: frontend] → [.tasks/011-project-ui.md](.tasks/011-project-ui.md)
 - [ ] #012 — Implement Kanban board UI (drag-drop columns, task cards, filters) [area: frontend] → [.tasks/012-kanban-ui.md](.tasks/012-kanban-ui.md)
 - [ ] #013 — Implement Gantt chart UI (timeline bars, dependency arrows, date drag) [area: frontend] → [.tasks/013-gantt-ui.md](.tasks/013-gantt-ui.md)
@@ -43,6 +42,7 @@
 - [x] #001 — Design and document full database schema for all entities [area: database] → [.tasks/001-database-schema-design.md](.tasks/001-database-schema-design.md)
 - [x] #002 — Design UI/UX wireframes for core views: dashboard, kanban, gantt, task detail [area: design] → [.tasks/002-ux-wireframes-core-views.md](.tasks/002-ux-wireframes-core-views.md)
 - [x] #003 — Set up Node.js + Express backend project structure (TypeScript, MVC, mssql) [area: backend] → [.tasks/003-backend-project-setup.md](.tasks/003-backend-project-setup.md)
+- [x] #006 — Implement authentication UI (login page, session management) [area: frontend] → [.tasks/006-auth-ui.md](.tasks/006-auth-ui.md)
 
 ---
 

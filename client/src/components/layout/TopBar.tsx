@@ -1,8 +1,9 @@
 import React from 'react';
-import { LogOut, User, KeyRound, Menu } from 'lucide-react';
+import { LogOut, Settings, Menu } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { useNavigate } from '@tanstack/react-router';
 import { useAuthStore } from '@/lib/stores/auth';
-import { apiClient } from '@/lib/api';
+import { logout as logoutApi } from '@/lib/api/auth.api';
 import { getInitials, cn } from '@/lib/utils';
 
 interface Props {
@@ -16,20 +17,21 @@ interface Props {
 
 export function TopBar({ onMenuOpen, showMenuButton = false, pageTitle }: Props) {
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await apiClient.post('/auth/logout');
+      await logoutApi();
     } finally {
+      // Always clear local state — even if the server request fails the cookie is cleared
       logout();
-      window.location.href = '/login';
+      void navigate({ to: '/login' });
     }
   };
 
   return (
     <header
-      className="h-topbar flex items-center justify-between px-4 md:px-6 border-b border-border flex-shrink-0"
-      style={{ backgroundColor: '#161B22' }}
+      className="h-topbar flex items-center justify-between px-4 md:px-6 border-b border-border flex-shrink-0 bg-surface-topbar"
     >
       {/* Left: hamburger (mobile/tablet) + breadcrumb/title */}
       <div className="flex items-center gap-3 min-w-0">
@@ -91,46 +93,34 @@ export function TopBar({ onMenuOpen, showMenuButton = false, pageTitle }: Props)
                 'animate-fade-in'
               )}
             >
+              {/* User identity header */}
               <div className="px-3 py-2 border-b border-border">
                 <p className="text-sm font-medium text-text-default">{user.displayName}</p>
                 <p className="text-caption text-text-muted capitalize">{user.role}</p>
               </div>
 
+              {/* Account Settings — navigates to /settings (password change) */}
               <DropdownMenu.Item asChild>
-                <a
-                  href="/settings"
+                <button
+                  onClick={() => void navigate({ to: '/settings' })}
                   data-testid="user-menu-settings"
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2 text-sm text-text-muted cursor-pointer',
+                    'w-full flex items-center gap-2 px-3 py-2 text-sm text-text-muted cursor-pointer',
                     'hover:bg-surface-hover hover:text-text-default',
                     'focus-visible:outline-none focus-visible:bg-surface-hover'
                   )}
                 >
-                  <User size={14} aria-hidden="true" />
+                  <Settings size={14} aria-hidden="true" />
                   Account Settings
-                </a>
-              </DropdownMenu.Item>
-
-              <DropdownMenu.Item asChild>
-                <a
-                  href="/settings/password"
-                  data-testid="user-menu-password"
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2 text-sm text-text-muted cursor-pointer',
-                    'hover:bg-surface-hover hover:text-text-default',
-                    'focus-visible:outline-none focus-visible:bg-surface-hover'
-                  )}
-                >
-                  <KeyRound size={14} aria-hidden="true" />
-                  Change Password
-                </a>
+                </button>
               </DropdownMenu.Item>
 
               <DropdownMenu.Separator className="my-1 border-t border-border" />
 
+              {/* Log out */}
               <DropdownMenu.Item asChild>
                 <button
-                  onClick={handleLogout}
+                  onClick={() => void handleLogout()}
                   data-testid="user-menu-logout"
                   className={cn(
                     'w-full flex items-center gap-2 px-3 py-2 text-sm text-text-muted cursor-pointer',

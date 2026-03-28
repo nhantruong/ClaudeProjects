@@ -1,14 +1,14 @@
 ---
 id: "006"
 title: "Implement authentication UI"
-status: "todo"
+status: "done"
 area: "frontend"
 agent: "@frontend-developer"
 priority: "normal"
 created_at: "2026-03-28"
 due_date: null
-started_at: null
-completed_at: null
+started_at: "2026-03-28"
+completed_at: "2026-03-28"
 prd_refs: ["FR-001", "FR-002", "FR-005"]
 blocks: ["011", "012", "013", "014", "015", "017", "019"]
 blocked_by: ["004", "005"]
@@ -20,15 +20,15 @@ Implement the login page and session management in the React frontend. On succes
 
 ## Acceptance Criteria
 
-- [ ] Login page at `/login` — username + password form, submit button
-- [ ] Successful login stores token and redirects to `/` (dashboard)
-- [ ] Invalid credentials shows inline error message (not an alert/toast)
-- [ ] Auth token stored securely (httpOnly cookie preferred; localStorage if cookie not feasible)
-- [ ] All routes except `/login` redirect to `/login` if unauthenticated
-- [ ] "Log out" action in nav clears session and redirects to `/login`
-- [ ] Password change form in account settings page (FR-005)
-- [ ] Loading state during login request (button disabled, spinner)
-- [ ] Login page is accessible on mobile (375px min-width)
+- [x] Login page at `/login` — username + password form, submit button
+- [x] Successful login stores token and redirects to `/` (dashboard)
+- [x] Invalid credentials shows inline error message (not an alert/toast)
+- [x] Auth token stored securely (httpOnly cookie preferred; localStorage if cookie not feasible)
+- [x] All routes except `/login` redirect to `/login` if unauthenticated
+- [x] "Log out" action in nav clears session and redirects to `/login`
+- [x] Password change form in account settings page (FR-005)
+- [x] Loading state during login request (button disabled, spinner)
+- [x] Login page is accessible on mobile (375px min-width)
 
 ## Technical Notes
 
@@ -44,3 +44,4 @@ Implement the login page and session management in the React frontend. On succes
 | Date | Agent / Human | Event |
 |------|--------------|-------|
 | 2026-03-28 | human | Task created during onboarding |
+| 2026-03-28 | @frontend-developer | Auth UI implemented — login page, auth guard, logout, password change |

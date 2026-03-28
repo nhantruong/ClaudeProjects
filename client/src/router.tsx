@@ -22,6 +22,9 @@ const ProjectsPage = lazy(() =>
 const TeamPage = lazy(() =>
   import('@/pages/TeamPage').then((m) => ({ default: m.TeamPage }))
 );
+const AccountSettingsPage = lazy(() =>
+  import('@/pages/AccountSettingsPage').then((m) => ({ default: m.AccountSettingsPage }))
+);
 
 // ── Loading fallback ──────────────────────────────────────────────────────────
 
@@ -120,6 +123,17 @@ const teamRoute = createRoute({
   ),
 });
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  beforeLoad: requireAuth,
+  component: () => (
+    <Protected>
+      <AccountSettingsPage />
+    </Protected>
+  ),
+});
+
 // Catch-all redirect to dashboard
 const indexRedirectRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -135,6 +149,7 @@ const routeTree = rootRoute.addChildren([
   dashboardRoute,
   projectsRoute,
   teamRoute,
+  settingsRoute,
   indexRedirectRoute,
 ]);
 
