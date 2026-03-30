@@ -105,3 +105,91 @@ export async function updatePassword(id: number, passwordHash: string): Promise<
     },
   );
 }
+
+/**
+ * listUsers — return all user accounts (active and inactive).
+ * Admin-only operation — the service layer must enforce access control.
+ */
+export async function listUsers(): Promise<SafeUser[]> {
+  const rows = await query<UserRow>(
+    `SELECT id, username, password_hash, display_name, role, is_active
+     FROM users
+     ORDER BY display_name ASC`,
+  );
+
+  return rows.map((row) => {
+    const { passwordHash: _removed, ...safe } = rowToUser(row);
+    return safe;
+  });
+}
+
+/**
+ * createUser — insert a new user record.
+ * The caller is responsible for providing the bcrypt hash (not the plaintext password).
+ *
+ * Returns the new user as a SafeUser (no password hash).
+ */
+export async function createUser(data: {
+  username: string;
+  passwordHash: string;
+  displayName: string;
+  role: 'admin' | 'manager' | 'member';
+}): Promise<SafeUser> {
+  const rows = await query<UserRow>(
+    `INSERT INTO users (username, password_hash, display_name, role)
+     OUTPUT
+       INSERTED.id,
+       INSERTED.username,
+       INSERTED.password_hash,
+       INSERTED.display_name,
+       INSERTED.role,
+       INSERTED.is_active
+     VALUES (@username, @passwordHash, @displayName, @role)`,
+    {
+      username: { type: sql.NVarChar(100), value: data.username },
+      passwordHash: { type: sql.NVarChar(255), value: data.passwordHash },
+      displayName: { type: sql.NVarChar(150), value: data.displayName },
+      role: { type: sql.NVarChar(20), value: data.role },
+    },
+  );
+
+  const { passwordHash: _removed, ...safe } = rowToUser(rows[0]);
+  return safe;
+}
+
+/**
+ * updateUser — update mutable fields on a user record.
+ * Accepts a partial set of updateable fields: displayName, role, isActive.
+ * Always bumps updated_at.
+ *
+ * Returns the updated user as a SafeUser.
+ */
+export async function updateUser(
+  id: number,
+  data: Partial<{ displayName: string; role: 'admin' | 'manager' | 'member'; isActive: boolean }>,
+): Promise<SafeUser> {
+  const rows = await query<UserRow>(
+    `UPDATE users
+     SET display_name = COALESCE(@displayName, display_name),
+         role         = COALESCE(@role, role),
+         is_active    = COALESCE(@isActive, is_active),
+         updated_at   = GETUTCDATE()
+     OUTPUT
+       INSERTED.id,
+       INSERTED.username,
+       INSERTED.password_hash,
+       INSERTED.display_name,
+       INSERTED.role,
+       INSERTED.is_active
+     WHERE id = @id`,
+    {
+      id: { type: sql.Int, value: id },
+      displayName: { type: sql.NVarChar(150), value: data.displayName ?? null },
+      role: { type: sql.NVarChar(20), value: data.role ?? null },
+      isActive: { type: sql.Bit, value: data.isActive ?? null },
+    },
+  );
+
+  const { passwordHash: _removed, ...safe } = rowToUser(rows[0]);
+  return safe;
+}

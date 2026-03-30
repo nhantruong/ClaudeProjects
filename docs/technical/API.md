@@ -12,7 +12,7 @@ Read by: @frontend-developer (to know what endpoints to call and their contracts
 > **Base URL**: `http://103.27.60.66/api/v1` (production) · `http://localhost:3001/api/v1` (local)
 > **Authentication**: JWT stored in an `httpOnly`, `SameSite=Strict` cookie named `token` (set on login). Also accepted via `Authorization: Bearer <token>` header for API clients. See ADR-002.
 > **Content-Type**: `application/json` for all requests and responses
-> **Last updated**: 2026-03-28
+> **Last updated**: 2026-03-30
 
 ---
 
@@ -174,44 +174,386 @@ Sets cookie: `token=<jwt>; HttpOnly; SameSite=Strict; Max-Age=2592000` (30 days)
 ### Users
 
 #### GET /users/me
-Return the authenticated user's profile.
+
+**Auth required**: Yes
+**Description**: Returns the authenticated user's own profile. Available to any authenticated user regardless of role.
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "user": {
+    "id": "number — user primary key",
+    "username": "string",
+    "displayName": "string",
+    "role": "string — admin | manager | member",
+    "isActive": "boolean"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `404` — User no longer exists (account deactivated after token issued)
+
+---
 
 #### GET /users
-List all users. Admin only. *(FR-010)*
+
+**Auth required**: Yes — Admin only
+**Description**: Returns all user accounts, including inactive (deactivated) ones. *(FR-010)*
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "users": [
+    {
+      "id": "number",
+      "username": "string",
+      "displayName": "string",
+      "role": "string — admin | manager | member",
+      "isActive": "boolean"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Authenticated but not an admin
+
+---
 
 #### POST /users
-Create a new user account. Admin only. *(FR-003, FR-010)*
+
+**Auth required**: Yes — Admin only
+**Description**: Creates a new user account. No self-registration — all accounts are admin-created. *(FR-003, FR-010)*
+
+**Request body**:
+```json
+{
+  "username": "string — login identifier (min 2, max 100 chars)",
+  "displayName": "string — name shown in UI (min 2, max 150 chars)",
+  "password": "string — plaintext password (min 8 chars, hashed before storage)",
+  "role": "string — admin | manager | member (default: member)"
+}
+```
+
+**Response 201**:
+```json
+{
+  "user": {
+    "id": "number",
+    "username": "string",
+    "displayName": "string",
+    "role": "string — admin | manager | member",
+    "isActive": "boolean"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Authenticated but not an admin
+- `409` — Username is already taken
+- `422` — Validation error (missing or invalid fields)
+
+---
 
 #### PATCH /users/:id
-Update a user account. Admin only. *(FR-010)*
 
-#### DELETE /users/:id
-Deactivate a user account. Admin only. *(FR-010)*
+**Auth required**: Yes — Admin only
+**Description**: Updates a user account's display name, role, or active status. Setting `isActive` to `false` deactivates (soft-deletes) the account — the record is retained for referential integrity. *(FR-010)*
+
+**Request body** (at least one field required):
+```json
+{
+  "displayName": "string — min 2, max 150 chars (optional)",
+  "role": "string — admin | manager | member (optional)",
+  "isActive": "boolean — false to deactivate, true to reactivate (optional)"
+}
+```
+
+**Response 200**:
+```json
+{
+  "user": {
+    "id": "number",
+    "username": "string",
+    "displayName": "string",
+    "role": "string — admin | manager | member",
+    "isActive": "boolean"
+  }
+}
+```
+
+**Error codes**:
+- `400` — User id is not a valid integer
+- `401` — Not authenticated
+- `403` — Authenticated but not an admin
+- `404` — User not found
+- `422` — Validation error (no fields provided, or field values invalid)
 
 ---
 
 ### Projects
 
 #### GET /projects
-List all projects the authenticated user is assigned to. *(FR-013)*
+
+**Auth required**: Yes
+**Description**: Returns all non-cancelled projects the authenticated user is assigned to. Each item includes a `memberCount` and `taskCount`. *(FR-013)*
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "projects": [
+    {
+      "id": "number",
+      "name": "string",
+      "description": "string | null",
+      "domain": "string — electromechanical | bim | software | other",
+      "status": "string — planning | active | on_hold | completed | cancelled",
+      "startDate": "string | null — YYYY-MM-DD",
+      "endDate": "string | null — YYYY-MM-DD",
+      "createdBy": "number — user id",
+      "createdAt": "string — ISO 8601",
+      "updatedAt": "string — ISO 8601",
+      "memberCount": "number",
+      "taskCount": "number"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+
+---
 
 #### POST /projects
-Create a new project. Manager/Admin only. *(FR-020)*
+
+**Auth required**: Yes — Manager or Admin only
+**Description**: Creates a new project. The authenticated user is automatically added as a manager-level member of the new project. *(FR-020, FR-021)*
+
+**Request body**:
+```json
+{
+  "name": "string — min 2, max 200 chars",
+  "description": "string — optional",
+  "domain": "string — electromechanical | bim | software | other",
+  "status": "string — planning | active | on_hold | completed | cancelled (default: planning)",
+  "startDate": "string — YYYY-MM-DD, optional",
+  "endDate": "string — YYYY-MM-DD, optional"
+}
+```
+
+**Response 201**:
+```json
+{
+  "project": {
+    "id": "number",
+    "name": "string",
+    "description": "string | null",
+    "domain": "string",
+    "status": "string",
+    "startDate": "string | null",
+    "endDate": "string | null",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Authenticated but not a manager or admin
+- `422` — Validation error (missing or invalid fields)
+
+---
 
 #### GET /projects/:id
-Get a project by ID. *(FR-020)*
+
+**Auth required**: Yes — project members only
+**Description**: Returns a single project with its full member list. Returns 403 if the authenticated user is not a member of the project. *(FR-020)*
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "project": {
+    "id": "number",
+    "name": "string",
+    "description": "string | null",
+    "domain": "string",
+    "status": "string",
+    "startDate": "string | null",
+    "endDate": "string | null",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601",
+    "members": [
+      {
+        "userId": "number",
+        "displayName": "string",
+        "username": "string",
+        "role": "string — manager | member",
+        "joinedAt": "string — ISO 8601"
+      }
+    ]
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Project not found
+
+---
 
 #### PATCH /projects/:id
-Update a project. Manager/Admin only. *(FR-022)*
+
+**Auth required**: Yes — Manager or Admin only
+**Description**: Applies partial updates to a project. Only the provided fields are changed. Requesting user must be a project member. *(FR-022, FR-023)*
+
+**Request body** (all fields optional — at least one required):
+```json
+{
+  "name": "string — min 2, max 200 chars",
+  "description": "string | null",
+  "domain": "string — electromechanical | bim | software | other",
+  "status": "string — planning | active | on_hold | completed | cancelled",
+  "startDate": "string | null — YYYY-MM-DD",
+  "endDate": "string | null — YYYY-MM-DD"
+}
+```
+
+**Response 200**:
+```json
+{
+  "project": {
+    "id": "number",
+    "name": "string",
+    "description": "string | null",
+    "domain": "string",
+    "status": "string",
+    "startDate": "string | null",
+    "endDate": "string | null",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project, or not a manager/admin
+- `404` — Project not found
+- `422` — Validation error (invalid field values)
+
+---
 
 #### DELETE /projects/:id
-Delete a project. Admin only.
+
+**Auth required**: Yes — Admin only
+**Description**: Permanently deletes a project and its membership records (cascade). Requesting user must be a project member. Tasks within the project are also deleted at the database level.
+
+**Request body**: None
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a project member, or not an admin
+- `404` — Project not found
+
+---
 
 #### POST /projects/:id/members
-Assign a user to a project. Manager/Admin only. *(FR-012)*
+
+**Auth required**: Yes — Manager or Admin only
+**Description**: Assigns a user to the project with the specified role. *(FR-012)*
+
+**Request body**:
+```json
+{
+  "userId": "number — target user's id",
+  "role": "string — manager | member (default: member)"
+}
+```
+
+**Response 201**:
+```json
+{
+  "member": {
+    "id": "number — membership record id",
+    "projectId": "number",
+    "userId": "number",
+    "role": "string — manager | member",
+    "joinedAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Requesting user is not a project member, or not a manager/admin
+- `404` — Project not found
+- `409` — User is already a member of this project
+- `422` — Validation error (missing or invalid fields)
+
+---
 
 #### DELETE /projects/:id/members/:userId
-Remove a user from a project. Manager/Admin only.
+
+**Auth required**: Yes — Manager or Admin only
+**Description**: Removes a user from the project. *(FR-012)*
+
+**Request body**: None
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Requesting user is not a project member, or not a manager/admin
+- `404` — Project not found
+
+---
+
+#### GET /projects/:id/members
+
+**Auth required**: Yes — project members only
+**Description**: Returns all members of a project with their user details.
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "members": [
+    {
+      "userId": "number",
+      "displayName": "string",
+      "username": "string",
+      "role": "string — manager | member",
+      "joinedAt": "string — ISO 8601"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Project not found
 
 ---
 
@@ -283,5 +625,7 @@ Ask the AI advisor a natural language question about project status. *(FR-083)*
 
 | Date | Change |
 |------|--------|
+| 2026-03-30 | Projects endpoints implemented — GET/POST /projects, GET/PATCH/DELETE /projects/:id, POST/DELETE/GET /projects/:id/members |
+| 2026-03-30 | Users endpoints implemented — GET /users/me, GET /users, POST /users, PATCH /users/:id |
 | 2026-03-28 | Auth endpoints implemented — POST /auth/login, POST /auth/logout, GET /auth/me, PATCH /auth/password |
 | 2026-03-28 | Initial API surface definition — planned endpoints from PRD.md |
