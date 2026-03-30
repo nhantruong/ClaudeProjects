@@ -560,28 +560,399 @@ Sets cookie: `token=<jwt>; HttpOnly; SameSite=Strict; Max-Age=2592000` (30 days)
 ### Tasks
 
 #### GET /projects/:projectId/tasks
-List all tasks in a project. *(FR-030)*
+
+**Auth required**: Yes — project members only
+**Description**: Returns all tasks in a project, ordered by priority (critical first) then due date. Supports optional query-string filters. *(FR-030)*
+
+**Query parameters** (all optional):
+- `status` — filter by task status: `todo | in_progress | in_review | done | blocked`
+- `assigneeId` — filter by assignee user id (integer)
+- `priority` — filter by priority: `critical | high | normal | low`
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "tasks": [
+    {
+      "id": "number",
+      "projectId": "number",
+      "title": "string",
+      "description": "string | null",
+      "assigneeId": "number | null",
+      "assigneeName": "string | null",
+      "status": "string — todo | in_progress | in_review | done | blocked",
+      "priority": "string — critical | high | normal | low",
+      "startDate": "string | null — YYYY-MM-DD",
+      "dueDate": "string | null — YYYY-MM-DD",
+      "completedAt": "string | null — ISO 8601",
+      "createdBy": "number",
+      "createdAt": "string — ISO 8601",
+      "updatedAt": "string — ISO 8601"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+
+---
 
 #### POST /projects/:projectId/tasks
-Create a task. *(FR-030)*
+
+**Auth required**: Yes — project members only
+**Description**: Creates a new task in the project. The authenticated user is recorded as `createdBy`. *(FR-030, FR-031)*
+
+**Request body**:
+```json
+{
+  "title": "string — min 1, max 300 chars (required)",
+  "description": "string — optional",
+  "assigneeId": "number — optional, user id of assignee",
+  "status": "string — todo | in_progress | in_review | done | blocked (default: todo)",
+  "priority": "string — critical | high | normal | low (default: normal)",
+  "startDate": "string — YYYY-MM-DD, optional",
+  "dueDate": "string — YYYY-MM-DD, optional"
+}
+```
+
+**Response 201**:
+```json
+{
+  "task": {
+    "id": "number",
+    "projectId": "number",
+    "title": "string",
+    "description": "string | null",
+    "assigneeId": "number | null",
+    "assigneeName": "string | null",
+    "status": "string",
+    "priority": "string",
+    "startDate": "string | null",
+    "dueDate": "string | null",
+    "completedAt": "string | null",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `422` — Validation error (missing or invalid fields)
+
+---
 
 #### GET /tasks/:id
-Get a task by ID with full details (subtasks, comments, attachments). *(FR-030)*
+
+**Auth required**: Yes — project members only
+**Description**: Returns full task detail including subtasks, comments (with author name), and dependency IDs in both directions. *(FR-030)*
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "task": {
+    "id": "number",
+    "projectId": "number",
+    "title": "string",
+    "description": "string | null",
+    "assigneeId": "number | null",
+    "assigneeName": "string | null",
+    "status": "string",
+    "priority": "string",
+    "startDate": "string | null",
+    "dueDate": "string | null",
+    "completedAt": "string | null",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601",
+    "subtasks": [
+      {
+        "id": "number",
+        "taskId": "number",
+        "title": "string",
+        "isComplete": "boolean",
+        "sortOrder": "number",
+        "createdAt": "string — ISO 8601"
+      }
+    ],
+    "comments": [
+      {
+        "id": "number",
+        "taskId": "number",
+        "userId": "number",
+        "authorName": "string",
+        "body": "string",
+        "createdAt": "string — ISO 8601",
+        "updatedAt": "string — ISO 8601"
+      }
+    ],
+    "dependsOn": "number[] — task ids this task depends on",
+    "blockedBy": "number[] — task ids that are blocked by this task"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this task's project
+- `404` — Task not found
+
+---
 
 #### PATCH /tasks/:id
-Update a task (status, assignee, dates, priority, etc.). *(FR-030, FR-041)*
+
+**Auth required**: Yes — project members only
+**Description**: Applies partial updates to a task. Only provided fields are changed. When `status` transitions to `done`, `completedAt` is set automatically; transitioning away from `done` clears it. *(FR-030, FR-032, FR-033, FR-041)*
+
+**Request body** (all fields optional — at least one required):
+```json
+{
+  "title": "string — min 1, max 300 chars",
+  "description": "string | null",
+  "assigneeId": "number | null — set to null to unassign",
+  "status": "string — todo | in_progress | in_review | done | blocked",
+  "priority": "string — critical | high | normal | low",
+  "startDate": "string | null — YYYY-MM-DD",
+  "dueDate": "string | null — YYYY-MM-DD"
+}
+```
+
+**Response 200**:
+```json
+{
+  "task": {
+    "id": "number",
+    "projectId": "number",
+    "title": "string",
+    "description": "string | null",
+    "assigneeId": "number | null",
+    "assigneeName": "string | null",
+    "status": "string",
+    "priority": "string",
+    "startDate": "string | null",
+    "dueDate": "string | null",
+    "completedAt": "string | null",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Task not found
+- `422` — Validation error (invalid field values)
+
+---
 
 #### DELETE /tasks/:id
-Delete a task.
 
-#### POST /tasks/:id/comments
-Add a comment to a task. *(FR-036)*
+**Auth required**: Yes — project members only
+**Description**: Permanently deletes a task. Subtasks and comments cascade at the database level. Returns 409 if other tasks have a dependency on this task — caller must remove all dependencies first.
+
+**Request body**: None
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Task not found
+- `409` — Other tasks depend on this task (remove dependencies first)
+
+---
 
 #### POST /tasks/:id/subtasks
-Add a subtask. *(FR-034)*
+
+**Auth required**: Yes — project members only
+**Description**: Adds a checklist subtask to a task. *(FR-034)*
+
+**Request body**:
+```json
+{
+  "title": "string — min 1, max 300 chars (required)",
+  "sortOrder": "number — display order (optional, default 0)"
+}
+```
+
+**Response 201**:
+```json
+{
+  "subtask": {
+    "id": "number",
+    "taskId": "number",
+    "title": "string",
+    "isComplete": "boolean",
+    "sortOrder": "number",
+    "createdAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Task not found
+- `422` — Validation error
+
+---
 
 #### PATCH /tasks/:id/subtasks/:subtaskId
-Update a subtask. *(FR-034)*
+
+**Auth required**: Yes — project members only
+**Description**: Updates a subtask's title, completion status, or display order. *(FR-034)*
+
+**Request body** (at least one field required):
+```json
+{
+  "title": "string — min 1, max 300 chars (optional)",
+  "isComplete": "boolean — (optional)",
+  "sortOrder": "number — (optional)"
+}
+```
+
+**Response 200**:
+```json
+{
+  "subtask": {
+    "id": "number",
+    "taskId": "number",
+    "title": "string",
+    "isComplete": "boolean",
+    "sortOrder": "number",
+    "createdAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Task or subtask not found
+- `422` — Validation error
+
+---
+
+#### DELETE /tasks/:id/subtasks/:subtaskId
+
+**Auth required**: Yes — project members only
+**Description**: Removes a subtask from a task. *(FR-034)*
+
+**Request body**: None
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Task or subtask not found
+
+---
+
+#### POST /tasks/:id/comments
+
+**Auth required**: Yes — project members only
+**Description**: Adds a comment to a task. The authenticated user is recorded as the author. *(FR-036)*
+
+**Request body**:
+```json
+{
+  "body": "string — min 1 char (required)"
+}
+```
+
+**Response 201**:
+```json
+{
+  "comment": {
+    "id": "number",
+    "taskId": "number",
+    "userId": "number",
+    "authorName": "string",
+    "body": "string",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Task not found
+- `422` — Validation error (empty body)
+
+---
+
+#### POST /tasks/:id/dependencies
+
+**Auth required**: Yes — project members only
+**Description**: Records that this task depends on another task (upstream must complete first). Performs cycle detection — rejects the request if adding the dependency would create a circular chain (A → B → … → A). *(FR-037)*
+
+**Request body**:
+```json
+{
+  "dependsOnTaskId": "number — id of the upstream task (required)"
+}
+```
+
+**Response 201**:
+```json
+{
+  "message": "Dependency added"
+}
+```
+
+**Error codes**:
+- `400` — taskId equals dependsOnTaskId (self-dependency)
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Task or upstream task not found
+- `409` — Adding this dependency would create a circular chain
+- `422` — Validation error (missing or invalid field)
+
+---
+
+#### DELETE /tasks/:id/dependencies/:dependsOnId
+
+**Auth required**: Yes — project members only
+**Description**: Removes the dependency record between this task and the upstream task. *(FR-037)*
+
+**Request body**: None
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Task not found
+
+---
+
+#### POST /tasks/:id/attachments
+
+**Auth required**: Yes
+**Description**: File attachment upload. **Not yet implemented** — returns `501` with a message indicating it is planned for v2. *(FR-035)*
+
+**Response 501**:
+```json
+{
+  "error": {
+    "code": "NOT_IMPLEMENTED",
+    "message": "File attachments coming in v2"
+  }
+}
+```
 
 ---
 
@@ -625,6 +996,7 @@ Ask the AI advisor a natural language question about project status. *(FR-083)*
 
 | Date | Change |
 |------|--------|
+| 2026-03-30 | Tasks endpoints implemented — GET/POST /projects/:projectId/tasks, GET/PATCH/DELETE /tasks/:id, POST/PATCH/DELETE /tasks/:id/subtasks/:subtaskId, POST /tasks/:id/comments, POST/DELETE /tasks/:id/dependencies, POST /tasks/:id/attachments (501 stub) |
 | 2026-03-30 | Projects endpoints implemented — GET/POST /projects, GET/PATCH/DELETE /projects/:id, POST/DELETE/GET /projects/:id/members |
 | 2026-03-30 | Users endpoints implemented — GET /users/me, GET /users, POST /users, PATCH /users/:id |
 | 2026-03-28 | Auth endpoints implemented — POST /auth/login, POST /auth/logout, GET /auth/me, PATCH /auth/password |
