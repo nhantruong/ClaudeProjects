@@ -978,7 +978,54 @@ Get the 3–6 week lookahead plan. *(FR-065)*
 ### Dashboard
 
 #### GET /dashboard
-Get dashboard summary: active projects, task counts (due today, overdue, completed this week), team workload, PPC trend. *(FR-070, FR-071, FR-072, FR-073)*
+
+**Auth required**: Yes
+**Description**: Returns all data needed to render the main dashboard in a single request: active project summary cards, task statistics (due today, overdue, completed this week), team workload, and PPC trend across all the authenticated user's projects. All data is scoped to projects the requesting user is a member of. *(FR-070, FR-071, FR-072, FR-073)*
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "projects": [
+    {
+      "id": "number",
+      "name": "string",
+      "domain": "string — electromechanical | bim | software | other",
+      "status": "string — planning | active | on_hold | completed | cancelled",
+      "taskCount": "number — total tasks in this project",
+      "memberCount": "number — total members in this project"
+    }
+  ],
+  "stats": {
+    "dueToday": "number — tasks with due_date = today AND status != done",
+    "overdue": "number — tasks with due_date < today AND status != done",
+    "completedThisWeek": "number — tasks completed since Monday of the current ISO week"
+  },
+  "workload": [
+    {
+      "userId": "number",
+      "displayName": "string",
+      "taskCount": "number — open tasks assigned to this user",
+      "overdueCount": "number — overdue tasks assigned to this user"
+    }
+  ],
+  "ppcTrend": [
+    {
+      "weekStartDate": "string — YYYY-MM-DD, Monday of the plan week",
+      "ppc": "number | null — Percent Plan Complete (0–100), null if week not yet closed"
+    }
+  ]
+}
+```
+
+Notes:
+- `projects` excludes cancelled projects; ordered by most recently updated first
+- `workload` is ordered by `taskCount` descending (most loaded team member first); only users with at least one open task appear
+- `ppcTrend` covers up to the last 8 calendar weeks across all user projects, ordered chronologically (oldest first)
+
+**Error codes**:
+- `401` — Not authenticated
 
 ---
 
@@ -996,6 +1043,7 @@ Ask the AI advisor a natural language question about project status. *(FR-083)*
 
 | Date | Change |
 |------|--------|
+| 2026-03-30 | Dashboard endpoint implemented — GET /dashboard (projects, stats, workload, ppcTrend) |
 | 2026-03-30 | Tasks endpoints implemented — GET/POST /projects/:projectId/tasks, GET/PATCH/DELETE /tasks/:id, POST/PATCH/DELETE /tasks/:id/subtasks/:subtaskId, POST /tasks/:id/comments, POST/DELETE /tasks/:id/dependencies, POST /tasks/:id/attachments (501 stub) |
 | 2026-03-30 | Projects endpoints implemented — GET/POST /projects, GET/PATCH/DELETE /projects/:id, POST/DELETE/GET /projects/:id/members |
 | 2026-03-30 | Users endpoints implemented — GET /users/me, GET /users, POST /users, PATCH /users/:id |
