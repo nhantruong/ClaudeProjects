@@ -29,6 +29,9 @@ const AccountSettingsPage = lazy(() =>
 const KanbanPage = lazy(() =>
   import('@/pages/KanbanPage').then((m) => ({ default: m.KanbanPage }))
 );
+const GanttPage = lazy(() =>
+  import('@/pages/GanttPage').then((m) => ({ default: m.GanttPage }))
+);
 
 // ── Loading fallback ──────────────────────────────────────────────────────────
 
@@ -162,6 +165,18 @@ const kanbanRoute = createRoute({
   ),
 });
 
+// Gantt chart (component implemented in task #013)
+const ganttRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/projects/$projectId/gantt',
+  beforeLoad: requireAuth,
+  component: () => (
+    <Protected>
+      <GanttPage />
+    </Protected>
+  ),
+});
+
 // Catch-all redirect to dashboard
 const indexRedirectRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -178,6 +193,7 @@ const routeTree = rootRoute.addChildren([
   projectsRoute,
   projectDetailRoute,
   kanbanRoute,
+  ganttRoute,
   teamRoute,
   settingsRoute,
   indexRedirectRoute,

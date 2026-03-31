@@ -5,6 +5,7 @@ import * as Tabs from '@radix-ui/react-tabs';
 import {
   ArrowLeftIcon,
   CalendarIcon,
+  GanttChartIcon,
   KanbanIcon,
   PencilIcon,
   AlertCircleIcon,
@@ -239,27 +240,43 @@ export function ProjectDetailPage() {
           </Tabs.Trigger>
         </Tabs.List>
 
-        {/* Tasks tab — links to Kanban (implemented in task #012) */}
+        {/* Tasks tab — links to Kanban and Gantt views */}
         <Tabs.Content value="tasks" data-testid="tab-content-tasks">
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <KanbanIcon size={48} className="text-neutral-600 mb-4" aria-hidden="true" />
-            <h3 className="text-heading-3 text-text-default mb-2">View tasks on the Kanban board</h3>
+            <h3 className="text-heading-3 text-text-default mb-2">View project tasks</h3>
             <p className="text-small text-text-muted mb-5">
-              Use the Kanban board to manage and update task status.
+              Use the Kanban board to manage task status, or the Gantt chart to see the timeline.
             </p>
-            <Link
-              to="/projects/$projectId/kanban"
-              params={{ projectId }}
-              data-testid="open-kanban-link"
-              className={cn(
-                'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body text-white font-medium',
-                'bg-accent-teal-500 hover:bg-accent-teal-600',
-                'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-teal-500'
-              )}
-            >
-              <KanbanIcon size={16} aria-hidden="true" />
-              Open Kanban board
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link
+                to="/projects/$projectId/kanban"
+                params={{ projectId }}
+                data-testid="open-kanban-link"
+                className={cn(
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body text-white font-medium',
+                  'bg-accent-teal-500 hover:bg-accent-teal-600',
+                  'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-teal-500'
+                )}
+              >
+                <KanbanIcon size={16} aria-hidden="true" />
+                Open Kanban board
+              </Link>
+              <Link
+                to="/projects/$projectId/gantt"
+                params={{ projectId }}
+                data-testid="open-gantt-link"
+                className={cn(
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body font-medium',
+                  'border border-border text-text-default',
+                  'hover:bg-surface-elevated transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-teal-500'
+                )}
+              >
+                <GanttChartIcon size={16} aria-hidden="true" />
+                Open Gantt chart
+              </Link>
+            </div>
           </div>
         </Tabs.Content>
 
