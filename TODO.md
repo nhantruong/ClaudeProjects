@@ -13,9 +13,7 @@ _(nothing — ready to pick up next tasks)_
 
 ## Up Next (prioritized)
 
-- [ ] #014 — Implement task detail UI (full task view, subtasks, comments, attachments) [area: frontend] → [.tasks/014-task-detail-ui.md](.tasks/014-task-detail-ui.md)
-- [ ] #016 — Implement Lean construction API (WWP create/update, PPC calculation, lookahead) [area: backend] → [.tasks/016-lean-api.md](.tasks/016-lean-api.md)
-- [ ] #018 — Implement Raphael AI advisor (briefing endpoint, ask endpoint, AI provider integration) [area: backend] → [.tasks/018-raphael-advisor-api.md](.tasks/018-raphael-advisor-api.md)
+_(nothing — ready to pick up next tasks)_
 
 ---
 
@@ -44,6 +42,9 @@ _(nothing — ready to pick up next tasks)_
 - [x] #012 — Implement Kanban board UI (drag-drop columns, task cards, filters) [area: frontend] → [.tasks/012-kanban-ui.md](.tasks/012-kanban-ui.md)
 - [x] #015 — Implement dashboard UI (project cards, stats widgets, Raphael briefing panel) [area: frontend] → [.tasks/015-dashboard-ui.md](.tasks/015-dashboard-ui.md)
 - [x] #019 — Implement team management UI (user list, create/edit user — admin only) [area: frontend] → [.tasks/019-team-management-ui.md](.tasks/019-team-management-ui.md)
+- [x] #014 — Implement task detail UI (full task view, subtasks, comments, attachments) [area: frontend] → [.tasks/014-task-detail-ui.md](.tasks/014-task-detail-ui.md)
+- [x] #016 — Implement Lean construction API (WWP create/update, PPC calculation, lookahead) [area: backend] → [.tasks/016-lean-api.md](.tasks/016-lean-api.md)
+- [x] #018 — Implement Raphael AI advisor (briefing endpoint, ask endpoint, AI provider integration) [area: backend] → [.tasks/018-raphael-advisor-api.md](.tasks/018-raphael-advisor-api.md)
 
 ---
 
