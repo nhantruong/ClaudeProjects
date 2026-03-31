@@ -77,6 +77,7 @@ export function QuickAddTaskForm({ projectId, status, onClose }: QuickAddTaskFor
         aria-label="New task title"
         aria-describedby={error ? 'quick-add-error' : undefined}
         disabled={createMutation.isPending}
+        data-testid="quick-add-task-input"
       />
 
       {error && (
@@ -101,6 +102,7 @@ export function QuickAddTaskForm({ projectId, status, onClose }: QuickAddTaskFor
             'transition-colors duration-150'
           )}
           aria-busy={createMutation.isPending}
+          data-testid="quick-add-task-submit"
         >
           {createMutation.isPending && (
             <Loader2 size={12} className="animate-spin" aria-hidden="true" />
