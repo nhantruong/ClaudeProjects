@@ -1,14 +1,14 @@
 ---
 id: "019"
 title: "Implement team management UI"
-status: "todo"
+status: "done"
 area: "frontend"
 agent: "@frontend-developer"
 priority: "normal"
 created_at: "2026-03-28"
 due_date: null
-started_at: null
-completed_at: null
+started_at: "2026-03-31"
+completed_at: "2026-03-31"
 prd_refs: ["FR-010", "FR-011", "FR-013"]
 blocks: []
 blocked_by: ["004", "006", "007"]
@@ -20,13 +20,13 @@ Build the team management section (admin only): user list, create user form, edi
 
 ## Acceptance Criteria
 
-- [ ] `/team` route — accessible only to admin users; redirects others to `/`
-- [ ] User list table: display_name, username, role badge, active/inactive status
-- [ ] "Add User" form: display_name, username, password (set by admin), role select
-- [ ] Edit user: change display_name, role, activate/deactivate
-- [ ] Deactivated users shown with visual distinction (greyed out)
-- [ ] "Team" link only shows in sidebar nav for admin users
-- [ ] Responsive on mobile
+- [x] `/team` route — accessible only to admin users; redirects others to `/`
+- [x] User list table: display_name, username, role badge, active/inactive status
+- [x] "Add User" form: display_name, username, password (set by admin), role select
+- [x] Edit user: change display_name, role, activate/deactivate
+- [x] Deactivated users shown with visual distinction (greyed out)
+- [x] "Team" link only shows in sidebar nav for admin users
+- [x] Responsive on mobile
 
 ## Technical Notes
 
@@ -38,3 +38,4 @@ Build the team management section (admin only): user list, create user form, edi
 | Date | Agent / Human | Event |
 |------|--------------|-------|
 | 2026-03-28 | human | Task created during onboarding |
+| 2026-03-31 | @frontend-developer | Team page with user list (active/inactive), create/edit user modal, role badges, deactivate/reactivate toggle. |
