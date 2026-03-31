@@ -13,13 +13,9 @@ _(nothing — ready to pick up next tasks)_
 
 ## Up Next (prioritized)
 
-- [ ] #011 — Implement project management UI (project list, create/edit project, members) [area: frontend] → [.tasks/011-project-ui.md](.tasks/011-project-ui.md)
-- [ ] #012 — Implement Kanban board UI (drag-drop columns, task cards, filters) [area: frontend] → [.tasks/012-kanban-ui.md](.tasks/012-kanban-ui.md)
 - [ ] #014 — Implement task detail UI (full task view, subtasks, comments, attachments) [area: frontend] → [.tasks/014-task-detail-ui.md](.tasks/014-task-detail-ui.md)
-- [ ] #015 — Implement dashboard UI (project cards, stats widgets, Raphael briefing panel) [area: frontend] → [.tasks/015-dashboard-ui.md](.tasks/015-dashboard-ui.md)
 - [ ] #016 — Implement Lean construction API (WWP create/update, PPC calculation, lookahead) [area: backend] → [.tasks/016-lean-api.md](.tasks/016-lean-api.md)
 - [ ] #018 — Implement Raphael AI advisor (briefing endpoint, ask endpoint, AI provider integration) [area: backend] → [.tasks/018-raphael-advisor-api.md](.tasks/018-raphael-advisor-api.md)
-- [ ] #019 — Implement team management UI (user list, create/edit user — admin only) [area: frontend] → [.tasks/019-team-management-ui.md](.tasks/019-team-management-ui.md)
 
 ---
 
@@ -44,6 +40,10 @@ _(nothing — ready to pick up next tasks)_
 - [x] #008 — Implement project CRUD API (create, list, get, update, delete, members) [area: backend] → [.tasks/008-project-api.md](.tasks/008-project-api.md)
 - [x] #009 — Implement task CRUD API (create, list, get, update, delete, comments, subtasks, dependencies) [area: backend] → [.tasks/009-task-api.md](.tasks/009-task-api.md)
 - [x] #010 — Implement dashboard API (summary endpoint for all dashboard data) [area: backend] → [.tasks/010-dashboard-api.md](.tasks/010-dashboard-api.md)
+- [x] #011 — Implement project management UI (project list, create/edit project, members) [area: frontend] → [.tasks/011-project-ui.md](.tasks/011-project-ui.md)
+- [x] #012 — Implement Kanban board UI (drag-drop columns, task cards, filters) [area: frontend] → [.tasks/012-kanban-ui.md](.tasks/012-kanban-ui.md)
+- [x] #015 — Implement dashboard UI (project cards, stats widgets, Raphael briefing panel) [area: frontend] → [.tasks/015-dashboard-ui.md](.tasks/015-dashboard-ui.md)
+- [x] #019 — Implement team management UI (user list, create/edit user — admin only) [area: frontend] → [.tasks/019-team-management-ui.md](.tasks/019-team-management-ui.md)
 
 ---
 
