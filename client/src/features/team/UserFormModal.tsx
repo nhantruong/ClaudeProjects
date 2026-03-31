@@ -20,8 +20,6 @@ const editSchema = z.object({
   role: z.enum(['admin', 'manager', 'member']),
 });
 
-type CreateFields = z.infer<typeof createSchema>;
-type EditFields = z.infer<typeof editSchema>;
 type FieldErrors = Partial<Record<string, string>>;
 
 // ── Props ──────────────────────────────────────────────────────────────────────
