@@ -15,6 +15,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
+import { TaskDrawer } from '@/features/tasks/TaskDrawer';
 import { tasksApi } from '@/lib/api/tasks.api';
 import type { ListTasksParams } from '@/lib/api/tasks.api';
 import type { Task, TaskStatus } from '@/types';
@@ -41,6 +42,7 @@ export function KanbanBoard({ projectId, filters, onTaskClick }: KanbanBoardProp
   const queryClient = useQueryClient();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [dragError, setDragError] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
 
   // ── Data fetching ───────────────────────────────────────────────────────────
 
@@ -257,7 +259,10 @@ export function KanbanBoard({ projectId, filters, onTaskClick }: KanbanBoardProp
               <KanbanColumn
                 status={status}
                 tasks={tasksByStatus[status]}
-                onTaskClick={onTaskClick}
+                onTaskClick={(task) => {
+                  setSelectedTaskId(task.id);
+                  onTaskClick(task);
+                }}
                 projectId={projectId}
               />
             </div>
@@ -273,6 +278,12 @@ export function KanbanBoard({ projectId, filters, onTaskClick }: KanbanBoardProp
           )}
         </DragOverlay>
       </DndContext>
+
+      {/* Task detail drawer */}
+      <TaskDrawer
+        taskId={selectedTaskId}
+        onClose={() => setSelectedTaskId(null)}
+      />
     </div>
   );
 }

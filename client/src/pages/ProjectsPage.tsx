@@ -1,4 +1,3 @@
-'use client';
 import React, { useState } from 'react';
 import { FolderIcon, PlusIcon, AlertCircleIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
