@@ -959,19 +959,281 @@ Sets cookie: `token=<jwt>; HttpOnly; SameSite=Strict; Max-Age=2592000` (30 days)
 ### Lean / Last Planner System
 
 #### GET /projects/:projectId/wwp
-Get the weekly work plan for a project. *(FR-060)*
+
+**Auth required**: Yes — project members only
+**Description**: Returns all weekly work plans for a project, ordered newest first. Each item includes task counts. *(FR-060)*
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "wwps": [
+    {
+      "id": "number",
+      "projectId": "number",
+      "weekStartDate": "string — YYYY-MM-DD, Monday of the plan week",
+      "ppc": "number | null — Percent Plan Complete (0–100), null until week is closed",
+      "createdBy": "number — user id",
+      "createdAt": "string — ISO 8601",
+      "taskCount": "number — total wwp_tasks in this plan",
+      "completedTaskCount": "number — completed wwp_tasks in this plan"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+
+---
 
 #### POST /projects/:projectId/wwp
-Create a weekly work plan. *(FR-060)*
 
-#### PATCH /projects/:projectId/wwp/:weekId
-Update WWP task completion status and variance reason. *(FR-061, FR-063)*
+**Auth required**: Yes — project members only
+**Description**: Creates a new weekly work plan for the specified week. `weekStartDate` must be a Monday; a 422 is returned if it is not. Returns 409 if a plan already exists for this project and week. *(FR-060)*
+
+**Request body**:
+```json
+{
+  "weekStartDate": "string — YYYY-MM-DD, must be a Monday (required)"
+}
+```
+
+**Response 201**:
+```json
+{
+  "wwp": {
+    "id": "number",
+    "projectId": "number",
+    "weekStartDate": "string — YYYY-MM-DD",
+    "ppc": "null — not yet closed",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `409` — A weekly work plan already exists for this project and week
+- `422` — Validation error (missing field, invalid date format, or date is not a Monday)
+
+---
+
+#### GET /projects/:projectId/wwp/:weekId
+
+**Auth required**: Yes — project members only
+**Description**: Returns a single weekly work plan with all its task commitments. *(FR-060)*
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "wwp": {
+    "id": "number",
+    "projectId": "number",
+    "weekStartDate": "string — YYYY-MM-DD",
+    "ppc": "number | null",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601",
+    "tasks": [
+      {
+        "id": "number",
+        "wwpId": "number",
+        "taskId": "number | null — linked task record, if any",
+        "description": "string — the committed work description",
+        "assigneeId": "number | null",
+        "assigneeName": "string | null",
+        "isComplete": "boolean",
+        "varianceReason": "string | null — required when closing with isComplete = false",
+        "createdAt": "string — ISO 8601"
+      }
+    ]
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Weekly work plan not found
+
+---
+
+#### POST /projects/:projectId/wwp/:weekId/tasks
+
+**Auth required**: Yes — project members only
+**Description**: Adds a task commitment to the weekly work plan. `taskId` optionally links the commitment to an existing task record. *(FR-061)*
+
+**Request body**:
+```json
+{
+  "description": "string — min 1, max 300 chars (required)",
+  "assigneeId": "number — optional, user id of the responsible team member",
+  "taskId": "number — optional, id of an existing task to link to this commitment"
+}
+```
+
+**Response 201**:
+```json
+{
+  "wwpTask": {
+    "id": "number",
+    "wwpId": "number",
+    "taskId": "number | null",
+    "description": "string",
+    "assigneeId": "number | null",
+    "assigneeName": "string | null",
+    "isComplete": "boolean",
+    "varianceReason": "string | null",
+    "createdAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Weekly work plan not found
+- `422` — Validation error (missing or invalid fields)
+
+---
+
+#### PATCH /projects/:projectId/wwp/:weekId/tasks/:wwpTaskId
+
+**Auth required**: Yes — project members only
+**Description**: Updates a wwp_task's completion status or variance reason. At least one field is required. `varianceReason` is required for any incomplete task before the week can be closed. *(FR-061, FR-063)*
+
+**Request body** (at least one field required):
+```json
+{
+  "isComplete": "boolean — optional",
+  "varianceReason": "string — max 500 chars, optional"
+}
+```
+
+**Response 200**:
+```json
+{
+  "wwpTask": {
+    "id": "number",
+    "wwpId": "number",
+    "taskId": "number | null",
+    "description": "string",
+    "assigneeId": "number | null",
+    "assigneeName": "string | null",
+    "isComplete": "boolean",
+    "varianceReason": "string | null",
+    "createdAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Weekly work plan or wwp_task not found
+- `422` — Validation error (no fields provided, or varianceReason exceeds 500 chars)
+
+---
+
+#### POST /projects/:projectId/wwp/:weekId/close
+
+**Auth required**: Yes — project members only
+**Description**: Closes the week and calculates PPC (Percent Plan Complete). PPC = `(completed_tasks / total_tasks) * 100`; 0 when there are no tasks. The calculated PPC is stored on the weekly_work_plans record. This operation is idempotent — re-closing an already-closed week recalculates PPC. Returns 422 if any wwp_task has `isComplete = false` and no `varianceReason` recorded. *(FR-062, FR-063)*
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "wwp": {
+    "id": "number",
+    "projectId": "number",
+    "weekStartDate": "string — YYYY-MM-DD",
+    "ppc": "number — calculated PPC (0–100)",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Weekly work plan not found
+- `422` — One or more incomplete tasks have no variance reason
+
+---
 
 #### GET /projects/:projectId/ppc
-Get PPC history for a project. *(FR-062, FR-064)*
+
+**Auth required**: Yes — project members only
+**Description**: Returns PPC history for the project's trend chart. Returns the last 12 closed weeks (where `ppc IS NOT NULL`), ordered chronologically (oldest first). *(FR-062, FR-064)*
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "history": [
+    {
+      "id": "number",
+      "weekStartDate": "string — YYYY-MM-DD",
+      "ppc": "number — Percent Plan Complete (0–100)"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+
+---
 
 #### GET /projects/:projectId/lookahead
-Get the 3–6 week lookahead plan. *(FR-065)*
+
+**Auth required**: Yes — project members only
+**Description**: Returns tasks due in the next N weeks for rolling lookahead planning. Excludes tasks with status `done` or `cancelled`. *(FR-065)*
+
+**Query parameters**:
+- `weeks` — integer, number of weeks to look ahead (default 4, max 6, min 1)
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "tasks": [
+    {
+      "id": "number",
+      "projectId": "number",
+      "title": "string",
+      "description": "string | null",
+      "assigneeId": "number | null",
+      "assigneeName": "string | null",
+      "status": "string — todo | in_progress | in_review | blocked",
+      "priority": "string — critical | high | normal | low",
+      "startDate": "string | null — YYYY-MM-DD",
+      "dueDate": "string | null — YYYY-MM-DD",
+      "completedAt": "string | null — ISO 8601",
+      "createdBy": "number",
+      "createdAt": "string — ISO 8601",
+      "updatedAt": "string — ISO 8601"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `422` — `weeks` is less than 1
 
 ---
 
