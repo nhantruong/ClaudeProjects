@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuthStore } from '@/lib/stores/auth';
+import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage';
 
 // ── Lazy-loaded pages ─────────────────────────────────────────────────────────
 
@@ -24,6 +25,9 @@ const TeamPage = lazy(() =>
 );
 const AccountSettingsPage = lazy(() =>
   import('@/pages/AccountSettingsPage').then((m) => ({ default: m.AccountSettingsPage }))
+);
+const KanbanPage = lazy(() =>
+  import('@/pages/KanbanPage').then((m) => ({ default: m.KanbanPage }))
 );
 
 // ── Loading fallback ──────────────────────────────────────────────────────────
@@ -134,6 +138,30 @@ const settingsRoute = createRoute({
   ),
 });
 
+// Project detail
+const projectDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/projects/$projectId',
+  beforeLoad: requireAuth,
+  component: () => (
+    <Protected>
+      <ProjectDetailPage />
+    </Protected>
+  ),
+});
+
+// Kanban board (component implemented in task #012)
+const kanbanRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/projects/$projectId/kanban',
+  beforeLoad: requireAuth,
+  component: () => (
+    <Protected>
+      <KanbanPage />
+    </Protected>
+  ),
+});
+
 // Catch-all redirect to dashboard
 const indexRedirectRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -148,6 +176,8 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   dashboardRoute,
   projectsRoute,
+  projectDetailRoute,
+  kanbanRoute,
   teamRoute,
   settingsRoute,
   indexRedirectRoute,
