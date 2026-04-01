@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base layer overrides ─────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    /* Prevent layout shift on scrollbar appearance */
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    @apply bg-surface-primary text-text-default font-sans antialiased;
+    min-width: 375px;
+  }
+
+  /* Accessible focus ring — only shown for keyboard navigation */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent-teal-500 ring-offset-2 ring-offset-surface-primary;
+  }
+
+  /* Custom scrollbar — dark theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-hover;
+  }
+}
+
+/* ── Skeleton shimmer ────────────────────────────────────────────────────── */
+
+@layer utilities {
+  .skeleton {
+    @apply bg-surface-card rounded;
+    background: linear-gradient(
+      90deg,
+      theme('colors.surface.card') 25%,
+      theme('colors.surface.hover') 50%,
+      theme('colors.surface.card') 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      animation: none;
+      background: theme('colors.surface.card');
+    }
+  }
+}
