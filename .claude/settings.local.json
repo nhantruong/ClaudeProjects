@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \":*)",
+      "Bash(node -e \":*)",
+      "Bash(node:*)",
+      "Bash(gh pr:*)",
+      "Bash(npm test:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npm install:*)",
+      "Bash(dir /s /b 'D:\\\\00. CloudData\\\\Personal\\\\OneDrive\\\\MyApp\\\\ClaudeProjects\\\\.claude\\\\worktrees\\\\loving-rosalind\\\\client\\\\src')",
+      "Bash(where gh:*)",
+      "Bash(where git:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(winget list:*)",
+      "Bash(npm run:*)",
+      "Bash(echo \"DB_USER from env: $env:DB_USER\")",
+      "Bash(echo \"DB_SERVER from env: $env:DB_SERVER\")",
+      "Bash(echo \"DB_PASSWORD from env: $env:DB_PASSWORD\")",
+      "Bash(powershell -Command \"[System.Environment]::GetEnvironmentVariable\\(''DB_USER'', ''Machine''\\)\")",
+      "Bash(powershell -Command \"Get-ChildItem Env: | Where-Object { $_.Name -like ''DB_*'' }\")"
+    ]
+  }
+}

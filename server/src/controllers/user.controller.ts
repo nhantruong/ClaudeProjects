@@ -87,7 +87,8 @@ export async function updateUser(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const id = parseInt(req.params['id'] ?? '', 10);
+    const rawId = req.params['id'];
+    const id = parseInt(Array.isArray(rawId) ? rawId[0] ?? '' : (rawId ?? ''), 10);
     if (isNaN(id)) {
       res.status(400).json({
         error: { code: 'VALIDATION_ERROR', message: 'User id must be a valid integer' },
@@ -97,9 +98,9 @@ export async function updateUser(
 
     const body = req.body as UpdateUserBody;
     const user = await userService.updateUser(id, {
-      displayName: body.displayName,
-      role: body.role,
-      isActive: body.isActive,
+      ...(body.displayName !== undefined ? { displayName: body.displayName } : {}),
+      ...(body.role !== undefined ? { role: body.role } : {}),
+      ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
     });
     res.status(200).json({ user });
   } catch (err) {

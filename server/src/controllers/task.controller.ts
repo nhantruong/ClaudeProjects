@@ -19,8 +19,8 @@ import type { TaskStatus, TaskPriority } from '../services/task.service.js';
 // ---------------------------------------------------------------------------
 
 /** Parse a numeric route param — returns NaN if the value is not a valid int. */
-function parseId(value: string | undefined): number {
-  return parseInt(value ?? '', 10);
+function parseId(value: string | string[] | undefined): number {
+  return parseInt(Array.isArray(value) ? value[0] ?? '' : (value ?? ''), 10);
 }
 
 // ---------------------------------------------------------------------------
@@ -82,7 +82,16 @@ export async function createTask(
     };
 
     const task = await taskService.createTask(
-      { projectId, title, description, assigneeId, status, priority, startDate, dueDate },
+      {
+        projectId,
+        title,
+        ...(description !== undefined ? { description } : {}),
+        ...(assigneeId !== undefined ? { assigneeId } : {}),
+        ...(status !== undefined ? { status } : {}),
+        ...(priority !== undefined ? { priority } : {}),
+        ...(startDate !== undefined ? { startDate } : {}),
+        ...(dueDate !== undefined ? { dueDate } : {}),
+      },
       req.user!.userId,
     );
 
@@ -135,7 +144,15 @@ export async function updateTask(
 
     const task = await taskService.updateTask(
       taskId,
-      { title, description, assigneeId, status, priority, startDate, dueDate },
+      {
+        ...(title !== undefined ? { title } : {}),
+        ...('description' in req.body ? { description: description as string | null } : {}),
+        ...('assigneeId' in req.body ? { assigneeId: assigneeId as number | null } : {}),
+        ...(status !== undefined ? { status } : {}),
+        ...(priority !== undefined ? { priority } : {}),
+        ...('startDate' in req.body ? { startDate: startDate as string | null } : {}),
+        ...('dueDate' in req.body ? { dueDate: dueDate as string | null } : {}),
+      },
       req.user!.userId,
     );
 
@@ -180,7 +197,11 @@ export async function addSubtask(
     const taskId = parseId(req.params['id']);
     const { title, sortOrder } = req.body as { title: string; sortOrder?: number };
 
-    const subtask = await taskService.addSubtask(taskId, { title, sortOrder }, req.user!.userId);
+    const subtask = await taskService.addSubtask(
+      taskId,
+      { title, ...(sortOrder !== undefined ? { sortOrder } : {}) },
+      req.user!.userId,
+    );
     res.status(201).json({ subtask });
   } catch (err) {
     next(err);
@@ -207,7 +228,11 @@ export async function updateSubtask(
     const subtask = await taskService.updateSubtask(
       taskId,
       subtaskId,
-      { title, isComplete, sortOrder },
+      {
+        ...(title !== undefined ? { title } : {}),
+        ...(isComplete !== undefined ? { isComplete } : {}),
+        ...(sortOrder !== undefined ? { sortOrder } : {}),
+      },
       req.user!.userId,
     );
 

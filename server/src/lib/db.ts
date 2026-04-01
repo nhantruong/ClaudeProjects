@@ -95,7 +95,7 @@ export async function closeDb(): Promise<void> {
  *   })
  */
 export interface QueryInput {
-  type: sql.ISqlTypeFactory;
+  type: sql.ISqlTypeFactory | sql.ISqlType | (() => sql.ISqlType);
   value: unknown;
 }
 
@@ -118,7 +118,7 @@ export async function query<T = Record<string, unknown>>(
 
   if (inputs) {
     for (const [name, { type, value }] of Object.entries(inputs)) {
-      request.input(name, type, value);
+      request.input(name, type as sql.ISqlType | (() => sql.ISqlType), value);
     }
   }
 

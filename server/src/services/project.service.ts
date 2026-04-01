@@ -116,11 +116,11 @@ export async function createProject(
 ): Promise<Project> {
   const project = await projectModel.createProject({
     name: data.name,
-    description: data.description,
+    ...(data.description !== undefined ? { description: data.description } : {}),
     domain: data.domain,
     status: data.status ?? 'planning',
-    startDate: data.startDate,
-    endDate: data.endDate,
+    ...(data.startDate !== undefined ? { startDate: data.startDate } : {}),
+    ...(data.endDate !== undefined ? { endDate: data.endDate } : {}),
     createdBy,
   });
 

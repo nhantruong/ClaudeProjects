@@ -143,12 +143,12 @@ export async function createTask(
   return taskModel.createTask({
     projectId: data.projectId,
     title: data.title,
-    description: data.description,
-    assigneeId: data.assigneeId,
+    ...(data.description !== undefined ? { description: data.description } : {}),
+    ...(data.assigneeId !== undefined ? { assigneeId: data.assigneeId } : {}),
     status: data.status ?? 'todo',
     priority: data.priority ?? 'normal',
-    startDate: data.startDate,
-    dueDate: data.dueDate,
+    ...(data.startDate !== undefined ? { startDate: data.startDate } : {}),
+    ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
     createdBy: requestingUserId,
   });
 }
