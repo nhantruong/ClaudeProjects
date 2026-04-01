@@ -31,6 +31,9 @@ const KanbanPage = lazy(() =>
 );
 const GanttPage = lazy(() =>
   import('@/pages/GanttPage').then((m) => ({ default: m.GanttPage }))
+)
+const LeanPage = lazy(() =>
+  import('@/pages/LeanPage').then((m) => ({ default: m.LeanPage }))
 );
 
 // ── Loading fallback ──────────────────────────────────────────────────────────
@@ -177,6 +180,18 @@ const ganttRoute = createRoute({
   ),
 });
 
+// Lean / Last Planner System (component implemented in task #017)
+const leanRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/projects/$projectId/lean',
+  beforeLoad: requireAuth,
+  component: () => (
+    <Protected>
+      <LeanPage />
+    </Protected>
+  ),
+});
+
 // Catch-all redirect to dashboard
 const indexRedirectRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -194,6 +209,7 @@ const routeTree = rootRoute.addChildren([
   projectDetailRoute,
   kanbanRoute,
   ganttRoute,
+  leanRoute,
   teamRoute,
   settingsRoute,
   indexRedirectRoute,

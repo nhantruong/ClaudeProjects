@@ -1,4 +1,3 @@
-'use client';
 import React, { useState } from 'react';
 import { useParams, Link } from '@tanstack/react-router';
 import * as Tabs from '@radix-ui/react-tabs';
@@ -7,6 +6,7 @@ import {
   CalendarIcon,
   GanttChartIcon,
   KanbanIcon,
+  ClipboardListIcon,
   PencilIcon,
   AlertCircleIcon,
   Loader2,
@@ -275,6 +275,20 @@ export function ProjectDetailPage() {
               >
                 <GanttChartIcon size={16} aria-hidden="true" />
                 Open Gantt chart
+              </Link>
+              <Link
+                to="/projects/$projectId/lean"
+                params={{ projectId }}
+                data-testid="open-lean-link"
+                className={cn(
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body font-medium',
+                  'border border-border text-text-default',
+                  'hover:bg-surface-elevated transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-teal-500'
+                )}
+              >
+                <ClipboardListIcon size={16} aria-hidden="true" />
+                Open Lean board
               </Link>
             </div>
           </div>
