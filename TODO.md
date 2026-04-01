@@ -18,7 +18,6 @@ _(nothing — ready to pick up next tasks)_
 ---
 
 ## Backlog
-- [ ] #017 — Implement Lean construction UI (WWP form, PPC chart, lookahead view) [area: frontend] → [.tasks/017-lean-ui.md](.tasks/017-lean-ui.md)
 - [ ] #021 — Update user guide documentation with completed features [area: docs] → [.tasks/021-user-guide-update.md](.tasks/021-user-guide-update.md)
 
 ---
@@ -45,6 +44,7 @@ _(nothing — ready to pick up next tasks)_
 - [x] #018 — Implement Raphael AI advisor (briefing endpoint, ask endpoint, AI provider integration) [area: backend] → [.tasks/018-raphael-advisor-api.md](.tasks/018-raphael-advisor-api.md)
 - [x] #013 — Implement Gantt chart UI (timeline bars, dependency arrows, date drag) [area: frontend] → [.tasks/013-gantt-ui.md](.tasks/013-gantt-ui.md)
 - [x] #020 — Set up Playwright E2E test suite and write core flow tests (auth, project creation, task management) [area: qa] → [.tasks/020-e2e-test-suite.md](.tasks/020-e2e-test-suite.md)
+- [x] #017 — Implement Lean construction UI (WWP form, PPC chart, lookahead view) [area: frontend] → [.tasks/017-lean-ui.md](.tasks/017-lean-ui.md)
 
 ---
 
