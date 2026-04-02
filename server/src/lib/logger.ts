@@ -14,6 +14,7 @@
  *  - Always include relevant context in the metadata object (second argument).
  */
 
+import { join } from 'path';
 import winston from 'winston';
 import { env } from './env.js';
 
@@ -38,8 +39,8 @@ const logger = winston.createLogger({
     new winston.transports.Console(),
     ...(isProduction
       ? [
-          new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-          new winston.transports.File({ filename: 'logs/combined.log' }),
+          new winston.transports.File({ filename: join(__dirname, '../../../App_Data/logs/error.log'), level: 'error' }),
+          new winston.transports.File({ filename: join(__dirname, '../../../App_Data/logs/combined.log') }),
         ]
       : []),
   ],
