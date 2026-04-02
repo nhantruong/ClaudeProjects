@@ -10,6 +10,8 @@
  *   → routes → notFound → errorHandler
  */
 
+import { join } from 'path';
+import { existsSync } from 'fs';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -104,6 +106,20 @@ export function createApp(): express.Application {
   app.use(`${prefix}/projects/:projectId`, leanRouter);
   app.use(`${prefix}/dashboard`, dashboardRouter);
   app.use(`${prefix}/advisor`, advisorRouter);
+
+  // ── Static files + SPA fallback ──────────────────────────────────────────
+  // When co-hosted with the API (production on iisnode), serve the React build
+  // from two levels up (site root). Skipped in local dev where Vite serves the
+  // frontend on a separate port.
+  const clientDistPath = join(__dirname, '../../');
+  const clientIndexPath = join(clientDistPath, 'index.html');
+  if (existsSync(clientIndexPath)) {
+    app.use(express.static(clientDistPath));
+    // SPA fallback — all non-API routes return index.html for client-side routing
+    app.get(/^(?!\/api\/|\/health).*/, (_req, res) => {
+      res.sendFile(clientIndexPath);
+    });
+  }
 
   // ── Error handling ───────────────────────────────────────────────────────
   // These must be last — Express identifies error handlers by arity (4 args).
