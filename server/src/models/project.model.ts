@@ -29,6 +29,7 @@ export interface Project {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  coverImageUrl: string | null;
 }
 
 export interface ProjectSummary extends Project {
@@ -67,6 +68,7 @@ interface ProjectRow {
   created_by: number;
   created_at: string;
   updated_at: string;
+  cover_image_url: string | null;
 }
 
 interface ProjectSummaryRow extends ProjectRow {
@@ -106,6 +108,7 @@ function rowToProject(row: ProjectRow): Project {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    coverImageUrl: row.cover_image_url,
   };
 }
 
@@ -151,7 +154,7 @@ export async function listProjectsForUser(userId: number): Promise<ProjectSummar
     `SELECT
        p.id, p.name, p.description, p.domain, p.status,
        p.start_date, p.end_date, p.created_by,
-       p.created_at, p.updated_at,
+       p.created_at, p.updated_at, p.cover_image_url,
        (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.id) AS member_count,
        (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) AS task_count
      FROM projects p
@@ -172,7 +175,7 @@ export async function listProjectsForUser(userId: number): Promise<ProjectSummar
 export async function getProjectById(id: number): Promise<Project | null> {
   const rows = await query<ProjectRow>(
     `SELECT id, name, description, domain, status,
-            start_date, end_date, created_by, created_at, updated_at
+            start_date, end_date, created_by, created_at, updated_at, cover_image_url
      FROM projects
      WHERE id = @id`,
     { id: { type: sql.Int, value: id } },
@@ -236,7 +239,7 @@ export async function createProject(data: {
      OUTPUT
        INSERTED.id, INSERTED.name, INSERTED.description, INSERTED.domain, INSERTED.status,
        INSERTED.start_date, INSERTED.end_date, INSERTED.created_by,
-       INSERTED.created_at, INSERTED.updated_at
+       INSERTED.created_at, INSERTED.updated_at, INSERTED.cover_image_url
      VALUES (@name, @description, @domain, @status, @startDate, @endDate, @createdBy)`,
     {
       name: { type: sql.NVarChar(200), value: data.name },
@@ -263,6 +266,25 @@ export async function createProject(data: {
  * Uses dynamic SQL built from an explicit allowlist — no user-controlled
  * column names ever enter the query string.
  */
+export async function listProjectsByMember(userId: number): Promise<Array<{
+  id: number; name: string; domain: ProjectDomain; status: ProjectStatus; role: ProjectMemberRole; taskCount: number;
+}>> {
+  const rows = await query<{
+    id: number; name: string; domain: ProjectDomain; status: ProjectStatus; role: ProjectMemberRole; task_count: number;
+  }>(
+    `SELECT p.id, p.name, p.domain, p.status, pm.role,
+       (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.status NOT IN (N'done')) AS task_count
+     FROM projects p
+     INNER JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = @userId
+     WHERE p.status NOT IN (N'cancelled')
+     ORDER BY p.updated_at DESC`,
+    { userId: { type: sql.Int, value: userId } },
+  );
+  return rows.map((r) => ({
+    id: r.id, name: r.name, domain: r.domain, status: r.status, role: r.role, taskCount: r.task_count,
+  }));
+}
+
 export async function updateProject(
   id: number,
   data: Partial<{
@@ -272,6 +294,7 @@ export async function updateProject(
     status: ProjectStatus;
     startDate: string | null;
     endDate: string | null;
+    coverImageUrl: string | null;
   }>,
 ): Promise<Project> {
   // Build the SET clause from an explicit allowlist — never from user input directly
@@ -304,6 +327,10 @@ export async function updateProject(
     setClauses.push('end_date = @endDate');
     inputs['endDate'] = { type: sql.Date, value: data.endDate };
   }
+  if ('coverImageUrl' in data) {
+    setClauses.push('cover_image_url = @coverImageUrl');
+    inputs['coverImageUrl'] = { type: sql.NVarChar(500), value: data.coverImageUrl };
+  }
 
   const rows = await query<ProjectRow>(
     `UPDATE projects
@@ -311,7 +338,7 @@ export async function updateProject(
      OUTPUT
        INSERTED.id, INSERTED.name, INSERTED.description, INSERTED.domain, INSERTED.status,
        INSERTED.start_date, INSERTED.end_date, INSERTED.created_by,
-       INSERTED.created_at, INSERTED.updated_at
+       INSERTED.created_at, INSERTED.updated_at, INSERTED.cover_image_url
      WHERE id = @id`,
     inputs,
   );

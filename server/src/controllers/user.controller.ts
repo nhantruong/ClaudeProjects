@@ -10,6 +10,7 @@
 
 import { Response, NextFunction } from 'express';
 import * as userService from '../services/user.service.js';
+import * as projectService from '../services/project.service.js';
 import { AuthRequest } from '../middleware/auth.js';
 
 // ---------------------------------------------------------------------------
@@ -117,6 +118,21 @@ export async function getMe(req: AuthRequest, res: Response, next: NextFunction)
   try {
     const user = await userService.getUserById(req.user!.userId);
     res.status(200).json({ user });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getUserProjects(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const rawId = req.params['userId'];
+    const userId = parseInt(Array.isArray(rawId) ? rawId[0] ?? '' : (rawId ?? ''), 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'userId must be a valid integer' } });
+      return;
+    }
+    const projects = await projectService.listProjectsByMember(userId);
+    res.status(200).json({ projects });
   } catch (err) {
     next(err);
   }

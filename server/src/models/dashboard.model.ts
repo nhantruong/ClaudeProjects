@@ -41,6 +41,12 @@ export interface PpcTrendEntry {
   ppc: number | null;
 }
 
+export interface DashboardRfiStats {
+  openCount: number;
+  pendingResponse: number;
+  overdueCount: number;
+}
+
 // ---------------------------------------------------------------------------
 // DB row shapes (snake_case from SQL Server)
 // ---------------------------------------------------------------------------
@@ -196,6 +202,29 @@ export async function getWorkload(userId: number): Promise<WorkloadEntry[]> {
     taskCount: row.task_count,
     overdueCount: row.overdue_count,
   }));
+}
+
+export async function getRfiStats(userId: number): Promise<DashboardRfiStats> {
+  const rows = await query<{ open_count: number; pending_response: number; overdue_count: number }>(
+    `SELECT
+       SUM(CASE WHEN r.status IN (N'open', N'in_review', N'pending_response') THEN 1 ELSE 0 END) AS open_count,
+       SUM(CASE WHEN r.status = N'pending_response' THEN 1 ELSE 0 END) AS pending_response,
+       SUM(CASE
+         WHEN r.sla_due_date < CAST(GETUTCDATE() AS date)
+          AND r.status NOT IN (N'closed', N'cancelled')
+         THEN 1 ELSE 0
+       END) AS overdue_count
+     FROM rfis r
+     INNER JOIN project_members pm ON pm.project_id = r.project_id AND pm.user_id = @userId`,
+    { userId: { type: sql.Int, value: userId } },
+  );
+
+  const row = rows[0];
+  return {
+    openCount: row?.open_count ?? 0,
+    pendingResponse: row?.pending_response ?? 0,
+    overdueCount: row?.overdue_count ?? 0,
+  };
 }
 
 /**

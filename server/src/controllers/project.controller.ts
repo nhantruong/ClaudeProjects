@@ -117,13 +117,14 @@ export async function updateProject(
 ): Promise<void> {
   try {
     const projectId = parseId(req.params['id']);
-    const { name, description, domain, status, startDate, endDate } = req.body as {
+    const { name, description, domain, status, startDate, endDate, coverImageUrl } = req.body as {
       name?: string;
       description?: string | null;
       domain?: string;
       status?: string;
       startDate?: string | null;
       endDate?: string | null;
+      coverImageUrl?: string | null;
     };
 
     const project = await projectService.updateProject(
@@ -135,6 +136,7 @@ export async function updateProject(
         ...(status !== undefined ? { status: status as projectService.ProjectStatus } : {}),
         ...('startDate' in req.body ? { startDate: startDate as string | null } : {}),
         ...('endDate' in req.body ? { endDate: endDate as string | null } : {}),
+        ...('coverImageUrl' in req.body ? { coverImageUrl: coverImageUrl as string | null } : {}),
       },
       req.user!.userId,
     );

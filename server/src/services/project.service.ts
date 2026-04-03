@@ -145,6 +145,7 @@ export async function updateProject(
     status: ProjectStatus;
     startDate: string | null;
     endDate: string | null;
+    coverImageUrl: string | null;
   }>,
   requestingUserId: number,
 ): Promise<Project> {
@@ -225,4 +226,8 @@ export async function listMembers(
   await assertMember(projectId, requestingUserId);
 
   return projectModel.listMembers(projectId);
+}
+
+export async function listProjectsByMember(userId: number) {
+  return projectModel.listProjectsByMember(userId);
 }
