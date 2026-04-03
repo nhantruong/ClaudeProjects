@@ -30,6 +30,11 @@ export interface DashboardData {
     weekStartDate: string;
     ppc: number | null;
   }>;
+  rfiStats: {
+    openCount: number;
+    pendingResponse: number;
+    overdueCount: number;
+  };
 }
 
 // ── Dashboard API ──────────────────────────────────────────────────────────────
