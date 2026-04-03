@@ -5,18 +5,17 @@ import type { ApiResponse, AuthUser } from '@/types';
 
 /**
  * Authenticate with username and password.
- * The server sets an httpOnly cookie containing the JWT and also returns
- * the accessToken in the response body (used by the Axios interceptor).
+ * The server sets an httpOnly cookie containing the JWT (ADR-002).
+ * The token is NOT returned in the response body — auth is cookie-only.
  */
 export async function login(
   username: string,
   password: string
 ): Promise<{ user: AuthUser; accessToken: string }> {
-  const response = await post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/login', {
-    username,
-    password,
-  });
-  return response.data;
+  const data = await post<{ user: AuthUser }>('/auth/login', { username, password });
+  // accessToken is empty — the JWT lives in the httpOnly cookie only.
+  // Axios sends the cookie automatically via withCredentials: true.
+  return { user: data.user, accessToken: '' };
 }
 
 /**
@@ -32,8 +31,7 @@ export async function logout(): Promise<void> {
  * Used to restore auth state on page reload.
  */
 export async function getMe(): Promise<{ user: AuthUser }> {
-  const response = await get<ApiResponse<{ user: AuthUser }>>('/users/me');
-  return response.data;
+  return get<{ user: AuthUser }>('/users/me');
 }
 
 /**

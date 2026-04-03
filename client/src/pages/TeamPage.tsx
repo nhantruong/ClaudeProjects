@@ -50,10 +50,11 @@ export function TeamPage() {
       {/* Active users table */}
       <div className="bg-surface-card border border-border rounded-lg overflow-hidden">
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_120px_100px_100px] gap-4 px-4 py-3 border-b border-border bg-surface-elevated text-xs font-medium text-text-muted uppercase tracking-wide">
+        <div className="grid grid-cols-[1fr_120px_100px_minmax(140px,1fr)_100px] gap-4 px-4 py-3 border-b border-border bg-surface-elevated text-xs font-medium text-text-muted uppercase tracking-wide">
           <div>Member</div>
           <div>Role</div>
           <div>Status</div>
+          <div>Projects</div>
           <div className="text-right">Actions</div>
         </div>
 

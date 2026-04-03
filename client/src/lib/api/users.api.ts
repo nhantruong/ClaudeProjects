@@ -25,6 +25,15 @@ export interface UpdateUserInput {
 
 // ── API functions ──────────────────────────────────────────────────────────────
 
+export interface MemberProject {
+  id: number;
+  name: string;
+  domain: string;
+  status: string;
+  role: string;
+  taskCount: number;
+}
+
 export const usersApi = {
   /** List all user accounts. Admin only. */
   list: () => get<{ users: User[] }>('/users'),
@@ -35,4 +44,8 @@ export const usersApi = {
   /** Partially update a user account. Admin only. */
   update: (id: number, data: UpdateUserInput) =>
     patch<{ user: User }>(`/users/${id}`, data),
+
+  /** Get projects for a user. Admin only. */
+  getMemberProjects: (userId: number) =>
+    get<{ projects: MemberProject[] }>(`/users/${userId}/projects`),
 };

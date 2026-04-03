@@ -46,6 +46,13 @@ interface ProjectCardProps {
   project: ProjectWithCounts;
 }
 
+const DOMAIN_GRADIENTS: Record<ProjectDomain, string> = {
+  electromechanical: 'linear-gradient(135deg, #1F4E8C 0%, #0D9488 100%)',
+  bim: 'linear-gradient(135deg, #5A1F8C 0%, #1F6FEB 100%)',
+  software: 'linear-gradient(135deg, #1F5C3E 0%, #0D9488 100%)',
+  other: 'linear-gradient(135deg, #30363D 0%, #484F58 100%)',
+};
+
 export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <Link
@@ -53,12 +60,32 @@ export function ProjectCard({ project }: ProjectCardProps) {
       params={{ projectId: String(project.id) }}
       data-testid={`project-card-${project.id}`}
       className={cn(
-        'block bg-surface-card border border-border rounded-card p-5',
+        'block bg-surface-card border border-border rounded-card overflow-hidden',
         'hover:border-border-hover hover:bg-surface-hover',
         'transition-all duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-teal-500'
       )}
     >
+      {/* Cover image / gradient placeholder */}
+      {project.coverImageUrl ? (
+        <img
+          src={project.coverImageUrl}
+          alt={project.name}
+          className="w-full h-28 object-cover"
+        />
+      ) : (
+        <div
+          className="w-full h-28 flex items-center justify-center"
+          style={{ background: DOMAIN_GRADIENTS[project.domain] }}
+          aria-hidden="true"
+        >
+          <span className="text-white/30 text-5xl font-mono font-bold select-none">
+            {DOMAIN_LABELS[project.domain][0]}
+          </span>
+        </div>
+      )}
+
+      <div className="p-5">
       {/* Top row: domain badge + status badge */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <span
@@ -101,6 +128,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <span>{formatDate(project.endDate)}</span>
           </span>
         )}
+      </div>
       </div>
     </Link>
   );

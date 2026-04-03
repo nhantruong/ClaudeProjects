@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BrainCircuit,
+  Clock,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
 import { cn, getInitials } from '@/lib/utils';
@@ -22,6 +23,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
   { icon: FolderOpen, label: 'Projects', to: '/projects' },
+  { icon: Clock, label: 'Timesheet', to: '/timesheet' },
   { icon: Users, label: 'Team', to: '/team', adminOnly: true },
 ];
 

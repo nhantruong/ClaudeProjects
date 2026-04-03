@@ -38,6 +38,7 @@ export interface Project {
   status: ProjectStatus;
   startDate: string | null;
   endDate: string | null;
+  coverImageUrl: string | null;
   createdBy: number;
   createdAt: string;
   updatedAt: string;
@@ -46,8 +47,10 @@ export interface Project {
 export interface ProjectMember {
   userId: number;
   displayName: string;
+  username?: string;
   role: 'manager' | 'member';
   joinedAt: string;
+  avatarUrl?: string | null;
 }
 
 // ── Tasks ─────────────────────────────────────────────────────────────────────

@@ -85,6 +85,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
   const [status, setStatus] = useState<string>('planning');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -106,6 +107,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
     setStatus('planning');
     setStartDate('');
     setEndDate('');
+    setCoverImageUrl('');
     setFieldErrors({});
     setServerError(null);
   }
@@ -139,14 +141,16 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
     }
 
     setFieldErrors({});
-    createMutation.mutate({
+    const payload: CreateProjectInput = {
       name: result.data.name,
-      description: result.data.description,
       domain: result.data.domain,
       status: result.data.status,
       startDate: result.data.startDate ?? null,
       endDate: result.data.endDate ?? null,
-    });
+    };
+    if (result.data.description !== undefined) payload.description = result.data.description;
+    if (coverImageUrl) payload.coverImageUrl = coverImageUrl;
+    createMutation.mutate(payload);
   }
 
   const isLoading = createMutation.isPending;
@@ -230,6 +234,22 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                   rows={3}
                   placeholder="Brief description of the project..."
                   className={cn(inputClass(), 'resize-none')}
+                />
+              </div>
+
+              {/* Cover image URL */}
+              <div>
+                <label htmlFor="create-cover-image" className={labelClass}>
+                  Cover image URL
+                </label>
+                <input
+                  id="create-cover-image"
+                  type="url"
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                  disabled={isLoading}
+                  placeholder="https://example.com/image.jpg"
+                  className={inputClass()}
                 />
               </div>
 

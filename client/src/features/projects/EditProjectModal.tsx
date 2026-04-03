@@ -78,6 +78,7 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
   const [status, setStatus] = useState<string>(project.status);
   const [startDate, setStartDate] = useState(project.startDate ?? '');
   const [endDate, setEndDate] = useState(project.endDate ?? '');
+  const [coverImageUrl, setCoverImageUrl] = useState(project.coverImageUrl ?? '');
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -90,6 +91,7 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
       setStatus(project.status);
       setStartDate(project.startDate ?? '');
       setEndDate(project.endDate ?? '');
+      setCoverImageUrl(project.coverImageUrl ?? '');
       setFieldErrors({});
       setServerError(null);
     }
@@ -138,6 +140,7 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
       status: result.data.status,
       startDate: result.data.startDate ?? null,
       endDate: result.data.endDate ?? null,
+      ...(coverImageUrl ? { coverImageUrl } : { coverImageUrl: null }),
     });
   }
 
@@ -218,6 +221,22 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
                   disabled={isLoading}
                   rows={3}
                   className={cn(inputClass(), 'resize-none')}
+                />
+              </div>
+
+              {/* Cover image URL */}
+              <div>
+                <label htmlFor="edit-cover-image" className={labelClass}>
+                  Cover image URL
+                </label>
+                <input
+                  id="edit-cover-image"
+                  type="url"
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                  disabled={isLoading}
+                  placeholder="https://example.com/image.jpg"
+                  className={inputClass()}
                 />
               </div>
 
