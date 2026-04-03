@@ -3,13 +3,13 @@
 > **Engine**: MS SQL Server 2019+
 > **ORM / Query layer**: Raw SQL via `mssql` Node.js driver (raw SQL per ADR-001)
 > **Connection**: Via `DB_SERVER`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` environment variables
-> **Last updated**: 2026-03-28
+> **Last updated**: 2026-04-03
 
 ---
 
 ## Schema Overview
 
-Raphael's data model centres on Users, Projects, and Tasks. Projects group tasks across multiple disciplines. Teams are modelled through project membership. Lean construction data (weekly work plans, PPC) links back to projects and tasks. Reference tables (disciplines, positions, work types, project types) hold lookup data seeded at installation.
+Raphael's data model centres on Users, Projects, and Tasks. Projects group tasks across multiple disciplines. Teams are modelled through project membership. Lean construction data (weekly work plans, PPC) links back to projects and tasks. RFI (Request for Information) records track formal design queries per project. Reference tables (disciplines, positions, work types, project types) hold lookup data seeded at installation.
 
 ```
 users
@@ -19,7 +19,13 @@ users
                                 │          ├──< task_comments
                                 │          ├──< task_attachments
                                 │          └──< task_dependencies
-                                └──< weekly_work_plans ──< wwp_tasks
+                                │
+                                ├──< weekly_work_plans ──< wwp_tasks
+                                │
+                                ├──< rfis ──< rfi_comments
+                                │        └──< rfi_activity
+                                │
+                                └──< timesheet_entries
 
 ref_disciplines       (lookup — seeded)
 ref_positions         (lookup — seeded)
@@ -36,6 +42,10 @@ ref_work_types        (lookup — seeded, FK → ref_work_type_groups)
 - `tasks` → `task_attachments`: file metadata attached to a task (cascade delete)
 - `tasks` → `task_dependencies`: many-to-many self-reference (blocks / blocked-by; no cascade — must be explicitly resolved)
 - `projects` → `weekly_work_plans` → `wwp_tasks`: Last Planner System WWP records per week per project
+- `projects` → `rfis`: formal design queries per project; no cascade on project deletion — RFI history is retained
+- `rfis` → `rfi_comments`: threaded discussion on an RFI (cascade delete)
+- `rfis` → `rfi_activity`: immutable audit log of state changes (cascade delete)
+- `projects` → `timesheet_entries`: time logs per user per day per project (cascade delete on project deletion; no cascade on user deactivation)
 
 ---
 
@@ -61,6 +71,7 @@ The draft schema included a `sessions` table. This was removed after reviewing A
 | display_name | nvarchar(150) | NOT NULL | Name shown in the UI |
 | role | nvarchar(20) | NOT NULL, DEFAULT 'member' | System role: `admin` / `manager` / `member` |
 | is_active | bit | NOT NULL, DEFAULT 1 | 0 = deactivated account (soft delete) |
+| avatar_url | nvarchar(500) | NULL | URL of the user's profile image (relative or absolute). NULL = use generated initials avatar. |
 | created_at | datetime2 | NOT NULL, DEFAULT GETUTCDATE() | Record creation timestamp (UTC) |
 | updated_at | datetime2 | NOT NULL, DEFAULT GETUTCDATE() | Last modification timestamp (UTC) — application must update on every PATCH |
 
@@ -90,6 +101,7 @@ The draft schema included a `sessions` table. This was removed after reviewing A
 | status | nvarchar(30) | NOT NULL, DEFAULT 'planning' | `planning` / `active` / `on_hold` / `completed` / `cancelled` (FR-023) |
 | start_date | date | NULL | Planned start date |
 | end_date | date | NULL | Planned end date |
+| cover_image_url | nvarchar(500) | NULL | URL of the project's cover image (relative or absolute). NULL = no cover image displayed. |
 | created_by | int | NOT NULL, FK → users.id | User who created the project |
 | created_at | datetime2 | NOT NULL, DEFAULT GETUTCDATE() | Record creation timestamp (UTC) |
 | updated_at | datetime2 | NOT NULL, DEFAULT GETUTCDATE() | Last modification timestamp (UTC) |
@@ -317,6 +329,43 @@ The draft schema included a `sessions` table. This was removed after reviewing A
 
 ---
 
+### timesheet_entries
+
+**Purpose**: Daily time logs — one row per user per project per calendar day. Records how many hours a team member worked on a project on a given date, with an optional work-type classification and free-text notes.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | int | PK, NOT NULL, IDENTITY(1,1) | Primary key |
+| user_id | int | NOT NULL, FK → users.id | The user who logged the time |
+| project_id | int | NOT NULL, FK → projects.id ON DELETE CASCADE | The project the time was logged against |
+| work_type_id | int | NULL, FK → ref_work_types.id | Optional work type classification (e.g., Modelling, Coordination) |
+| entry_date | date | NOT NULL | Calendar date on which the work was performed |
+| hours | decimal(4,2) | NOT NULL | Hours logged; must be > 0 and <= 24 (quarter-hour precision via 2 d.p.) |
+| description | nvarchar(500) | NULL | Optional free-text notes about the work performed |
+| created_at | datetime2 | NOT NULL, DEFAULT GETUTCDATE() | Record creation timestamp (UTC) |
+| updated_at | datetime2 | NOT NULL, DEFAULT GETUTCDATE() | Last modification timestamp (UTC) — application must update on every PATCH |
+
+**Constraints**:
+- `UQ_timesheet_user_project_date` on `(user_id, project_id, entry_date)` — one entry per user per project per day; the application UPDATEs the existing row rather than INSERTing a duplicate
+- `CK_timesheet_hours` — `hours > 0 AND hours <= 24`
+- `FK_timesheet_user` → `users.id` (no cascade — timesheet history is retained when a user is deactivated; hard deletion requires explicit DBA action)
+- `FK_timesheet_project` → `projects.id` ON DELETE CASCADE — time entries have no business value without their project
+- `FK_timesheet_work_type` → `ref_work_types.id` (no cascade — deactivating a lookup row does not invalidate historical entries)
+
+**Indexes**:
+- `idx_timesheet_user_date` on `(user_id, entry_date)` — primary read path: all entries for a user in a date range (user timesheet view, personal summary)
+- `idx_timesheet_project_date` on `(project_id, entry_date)` — project-level time reporting and cost tracking
+- `idx_timesheet_entry_date` on `(entry_date)` — cross-user period aggregation where neither user nor project is the leading predicate
+
+**Relationships**:
+- `user_id` → `users.id` (no cascade — see constraints note above)
+- `project_id` → `projects.id` ON DELETE CASCADE
+- `work_type_id` → `ref_work_types.id` (no cascade — optional classification)
+
+**Notes**: The `decimal(4,2)` type for `hours` supports values from 0.01 to 99.99, but the CHECK constraint caps the meaningful range at 24.00. Quarter-hour precision (0.25 increments) is the expected input granularity from the UI, but the constraint does not enforce this — any value with up to 2 decimal places is accepted. The UNIQUE constraint drives an upsert pattern: the application attempts an UPDATE first; if zero rows are affected it falls back to INSERT.
+
+---
+
 ## Reference / Lookup Tables
 
 These tables are seeded by migration `002_seed_lookups.sql` and are read-only in normal application operation. New rows are added via future migrations.
@@ -404,6 +453,10 @@ These tables are seeded by migration `002_seed_lookups.sql` and are read-only in
 |----------------|------|-------------|------------|-----------------|
 | `001_initial_schema.sql` | 2026-03-28 | Create all core tables: users, projects, project_members, tasks, subtasks, task_dependencies, task_attachments, task_comments, weekly_work_plans, wwp_tasks | Yes — rollback DDL in file comments; WARNING: data loss | None — new database |
 | `002_seed_lookups.sql` | 2026-03-28 | Create and seed reference tables: ref_disciplines, ref_positions, ref_project_types, ref_work_type_groups, ref_work_types | Yes — DELETE + DROP statements in file comments | None — INSERT only |
+| `003_rfi.sql` | 2026-04-02 | Create RFI tables: rfis, rfi_comments, rfi_activity | Yes — DROP TABLE statements in file comments; WARNING: data loss | None — additive only |
+| `004_images_timesheet.sql` | 2026-04-03 | Add cover_image_url to projects; add avatar_url to users; create timesheet_entries table | Yes — rollback DDL in file comments; WARNING: timesheet data loss on step 3 rollback | Low — nullable column additions + new table; no existing rows affected |
+
+See `docs/technical/MIGRATION_GUIDE.md` for the legacy data migration strategy (one-time, manual execution via SSMS) — migrates users, projects, and project_members from `cbimtech_dmc` and `cbimtech_TimeSheetWeb` into `cbimtech_raphael`. This is not a numbered migration file because it requires human discovery steps before running.
 
 ---
 
@@ -526,6 +579,9 @@ ORDER BY p.name, t.title;
 | `idx_subtasks_task_id` (composite with sort_order) | B-tree | Fetches checklist in display order in one index operation |
 | `idx_task_deps_task_id` + `idx_task_deps_depends_on` | B-tree | Both directions of dependency traversal need index support |
 | `idx_wwp_project_week` | B-tree | PPC trend chart reads in date order per project |
+| `idx_timesheet_user_date` (composite) | B-tree | Primary timesheet read path — equality on user_id + range on entry_date; supports user timesheet view and payroll export |
+| `idx_timesheet_project_date` (composite) | B-tree | Project-level time reporting — equality on project_id + range on entry_date |
+| `idx_timesheet_entry_date` | B-tree | Cross-user period aggregation where date is the only predicate (e.g. "all hours logged this week") |
 
 **Indexes NOT added and why**:
 - `tasks.status` alone — low cardinality (5 values); covered by the composite `idx_tasks_project_status` instead
@@ -546,6 +602,7 @@ ORDER BY p.name, t.title;
 | task_attachments | Until manually deleted | Application must also delete physical files |
 | weekly_work_plans | Indefinite | PPC history required for trend reporting |
 | wwp_tasks | Indefinite (cascade from WWP) | Retained as long as the WWP exists |
+| timesheet_entries | Indefinite | Retained for payroll and audit purposes; cascade-deleted if the parent project is hard-deleted |
 
 ---
 
