@@ -30,6 +30,8 @@ import tasksRouter from './routes/tasks.routes.js';
 import dashboardRouter from './routes/dashboard.routes.js';
 import advisorRouter from './routes/advisor.routes.js';
 import leanRouter from './routes/lean.routes.js';
+import { projectRfiRouter, rfiRouter } from './routes/rfi.routes.js';
+import timesheetRouter from './routes/timesheet.routes.js';
 
 export function createApp(): express.Application {
   const app = express();
@@ -106,6 +108,10 @@ export function createApp(): express.Application {
   app.use(`${prefix}/projects/:projectId`, leanRouter);
   app.use(`${prefix}/dashboard`, dashboardRouter);
   app.use(`${prefix}/advisor`, advisorRouter);
+  // RFI — collection endpoints nested under projects; resource endpoints at /rfis
+  app.use(`${prefix}/projects/:projectId/rfis`, projectRfiRouter);
+  app.use(`${prefix}/rfis`, rfiRouter);
+  app.use(`${prefix}/timesheets`, timesheetRouter);
 
   // ── Static files + SPA fallback ──────────────────────────────────────────
   // When co-hosted with the API (production on iisnode), serve the React build
