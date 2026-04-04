@@ -12,7 +12,7 @@ Read by: @frontend-developer (to know what endpoints to call and their contracts
 > **Base URL**: `http://103.27.60.66/api/v1` (production) · `http://localhost:3001/api/v1` (local)
 > **Authentication**: JWT stored in an `httpOnly`, `SameSite=Strict` cookie named `token` (set on login). Also accepted via `Authorization: Bearer <token>` header for API clients. See ADR-002.
 > **Content-Type**: `application/json` for all requests and responses
-> **Last updated**: 2026-04-04
+> **Last updated**: 2026-04-04 (lookup endpoint added)
 
 ---
 
@@ -1649,6 +1649,35 @@ Notes:
 
 ---
 
+### Lookups
+
+#### GET /lookups/work-types
+
+**Auth required**: Yes
+**Description**: Returns all active work types joined with their group name and group id, ordered by group display order then work type name alphabetically. Used to populate work-type dropdowns in the timesheet form.
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "workTypes": [
+    {
+      "id": "number — work type primary key",
+      "name": "string — work type name",
+      "groupId": "number — ref_work_type_groups.id",
+      "groupName": "string — group name (e.g. Modelling, Meeting & Preparation)",
+      "isActive": "boolean — always true (inactive types are excluded)"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+
+---
+
 ### Raphael AI Advisor
 
 #### GET /advisor/briefing
@@ -1663,6 +1692,7 @@ Ask the AI advisor a natural language question about project status. *(FR-083)*
 
 | Date | Change |
 |------|--------|
+| 2026-04-04 | Lookup endpoints implemented — GET /lookups/work-types |
 | 2026-04-04 | RFI image upload endpoints implemented — POST/DELETE /rfis/:id/images; GET /rfis/:id now includes images array |
 | 2026-04-04 | RFI endpoints documented — GET/POST /projects/:projectId/rfis, GET /projects/:projectId/rfis/stats, GET/PATCH/DELETE /rfis/:id, POST/DELETE /rfis/:id/comments |
 | 2026-03-30 | Dashboard endpoint implemented — GET /dashboard (projects, stats, workload, ppcTrend) |
