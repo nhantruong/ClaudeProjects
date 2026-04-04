@@ -15,6 +15,8 @@ import { z } from 'zod';
 import { timesheetApi } from '@/lib/api/timesheet.api';
 import type { TimesheetEntry, CreateTimesheetInput, UpdateTimesheetInput } from '@/lib/api/timesheet.api';
 import { projectsApi } from '@/lib/api/projects.api';
+import { lookupApi } from '@/lib/api/lookup.api';
+import type { WorkType } from '@/lib/api/lookup.api';
 import { cn, formatDate } from '@/lib/utils';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -39,17 +41,19 @@ const entrySchema = z.object({
 
 interface EntryFormProps {
   projects: Array<{ id: number; name: string }>;
+  workTypes: WorkType[];
   entry?: TimesheetEntry;
   onSave: () => void;
   onCancel: () => void;
 }
 
-function EntryForm({ projects, entry, onSave, onCancel }: EntryFormProps) {
+function EntryForm({ projects, workTypes, entry, onSave, onCancel }: EntryFormProps) {
   const queryClient = useQueryClient();
   const [projectId, setProjectId] = useState<string>(entry ? String(entry.projectId) : '');
   const [entryDate, setEntryDate] = useState(entry?.entryDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10));
   const [hours, setHours] = useState(entry ? String(entry.hours) : '');
   const [description, setDescription] = useState(entry?.description ?? '');
+  const [workTypeId, setWorkTypeId] = useState<number | null>(entry?.workTypeId ?? null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -100,6 +104,7 @@ function EntryForm({ projects, entry, onSave, onCancel }: EntryFormProps) {
         hours: result.data.hours,
         description: result.data.description ?? null,
         entryDate: result.data.entryDate,
+        workTypeId: workTypeId ?? null,
       });
     } else {
       createMutation.mutate({
@@ -107,6 +112,7 @@ function EntryForm({ projects, entry, onSave, onCancel }: EntryFormProps) {
         entryDate: result.data.entryDate,
         hours: result.data.hours,
         description: result.data.description,
+        workTypeId: workTypeId ?? undefined,
       });
     }
   }
@@ -182,6 +188,29 @@ function EntryForm({ projects, entry, onSave, onCancel }: EntryFormProps) {
           {errors['hours'] && <p className="mt-1 text-caption text-error-400">{errors['hours']}</p>}
         </div>
 
+        {/* Work Type */}
+        <div>
+          <label htmlFor="ts-work-type" className={labelCls}>Work Type</label>
+          <select
+            id="ts-work-type"
+            value={workTypeId ?? ''}
+            onChange={(e) => setWorkTypeId(e.target.value ? Number(e.target.value) : null)}
+            disabled={isLoading}
+            className={cn(inputCls(), 'cursor-pointer')}
+          >
+            <option value="">— Work type (optional) —</option>
+            {Array.from(new Set(workTypes.map((wt) => wt.groupName))).map((groupName) => (
+              <optgroup key={groupName} label={groupName}>
+                {workTypes
+                  .filter((wt) => wt.groupName === groupName)
+                  .map((wt) => (
+                    <option key={wt.id} value={wt.id}>{wt.name}</option>
+                  ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+
         {/* Description */}
         <div>
           <label htmlFor="ts-desc" className={labelCls}>Description</label>
@@ -226,7 +255,7 @@ function EntryForm({ projects, entry, onSave, onCancel }: EntryFormProps) {
 
 // ── Entries Tab ────────────────────────────────────────────────────────────────
 
-function EntriesTab({ projects }: { projects: Array<{ id: number; name: string }> }) {
+function EntriesTab({ projects, workTypes }: { projects: Array<{ id: number; name: string }>; workTypes: WorkType[] }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editEntry, setEditEntry] = useState<TimesheetEntry | null>(null);
@@ -286,6 +315,7 @@ function EntriesTab({ projects }: { projects: Array<{ id: number; name: string }
       {(showForm || editEntry) && (
         <EntryForm
           projects={projects}
+          workTypes={workTypes}
           entry={editEntry ?? undefined}
           onSave={() => { setShowForm(false); setEditEntry(null); }}
           onCancel={() => { setShowForm(false); setEditEntry(null); }}
@@ -572,7 +602,14 @@ export function TimesheetPage() {
     staleTime: 60_000,
   });
 
+  const { data: lookupData } = useQuery({
+    queryKey: ['work-types'],
+    queryFn: lookupApi.getWorkTypes,
+    staleTime: Infinity,
+  });
+
   const projects = (projectsData?.projects ?? []).map((p) => ({ id: p.id, name: p.name }));
+  const workTypes = lookupData?.workTypes ?? [];
 
   const tabTriggerCls = cn(
     'px-4 py-2.5 text-body text-text-muted capitalize',
@@ -599,7 +636,7 @@ export function TimesheetPage() {
         </Tabs.List>
 
         <Tabs.Content value="entries">
-          <EntriesTab projects={projects} />
+          <EntriesTab projects={projects} workTypes={workTypes} />
         </Tabs.Content>
         <Tabs.Content value="weekly">
           <WeeklyTab />
