@@ -17,7 +17,6 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
 
 import { env } from './lib/env.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
@@ -70,24 +69,6 @@ export function createApp(): express.Application {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
 
-  // ── Global rate limiting ─────────────────────────────────────────────────
-  // 100 requests per 15 minutes per IP. Stricter limits are applied per-route
-  // on auth endpoints (login, password change) in their respective routers.
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100,
-      standardHeaders: true,
-      legacyHeaders: false,
-      message: {
-        error: {
-          code: 'RATE_LIMITED',
-          message: 'Too many requests — please try again later',
-        },
-      },
-    }),
-  );
-
   // ── Health check ─────────────────────────────────────────────────────────
   // Public endpoint — no authentication required.
   // Used by load balancers, uptime monitors, and CI smoke tests.
@@ -112,6 +93,13 @@ export function createApp(): express.Application {
   app.use(`${prefix}/projects/:projectId/rfis`, projectRfiRouter);
   app.use(`${prefix}/rfis`, rfiRouter);
   app.use(`${prefix}/timesheets`, timesheetRouter);
+
+  // ── Static uploads ───────────────────────────────────────────────────────
+  // Serves user-uploaded files (RFI images, etc.) from /uploads/.
+  // The uploads directory lives at the project root, one level above server/.
+  // __dirname resolves to server/dist/src in production, so ../../../ reaches root.
+  const uploadsServePath = join(__dirname, '../../../uploads');
+  app.use('/uploads', express.static(uploadsServePath));
 
   // ── Static files + SPA fallback ──────────────────────────────────────────
   // When co-hosted with the API (production on iisnode), serve the React build

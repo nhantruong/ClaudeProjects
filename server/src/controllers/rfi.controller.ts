@@ -5,6 +5,8 @@
  * and formats the HTTP response. No business logic lives here.
  */
 
+import path from 'path';
+
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import * as rfiService from '../services/rfi.service.js';
@@ -139,6 +141,58 @@ export async function getStats(
     const projectId = parseId(req.params['projectId']);
     const stats = await rfiService.getProjectStats(projectId, req.user!.userId);
     res.status(200).json({ stats });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /api/v1/rfis/:id/images — upload image files (multipart/form-data) */
+export async function uploadImages(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const rfiId = parseId(req.params['id']);
+    const files = req.files as Express.Multer.File[] | undefined;
+
+    if (!files || files.length === 0) {
+      res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'No files uploaded' } });
+      return;
+    }
+
+    const rawCommentId = req.body['commentId'] as string | undefined;
+    const commentId = rawCommentId ? parseInt(rawCommentId, 10) : null;
+
+    const images = [];
+    for (const file of files) {
+      const img = await rfiService.addImage(rfiId, req.user!.userId, {
+        filename: file.filename,
+        storagePath: path.posix.join('/uploads/rfi', file.filename),
+        mimeType: file.mimetype,
+        fileSize: file.size,
+        commentId,
+      });
+      images.push(img);
+    }
+
+    res.status(201).json({ images });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** DELETE /api/v1/rfis/:id/images/:imageId */
+export async function deleteImage(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const rfiId   = parseId(req.params['id']);
+    const imageId = parseId(req.params['imageId']);
+    await rfiService.removeImage(rfiId, imageId, req.user!.userId);
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

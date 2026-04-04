@@ -23,7 +23,8 @@ users
                                 ├──< weekly_work_plans ──< wwp_tasks
                                 │
                                 ├──< rfis ──< rfi_comments
-                                │        └──< rfi_activity
+                                │        ├──< rfi_activity
+                                │        └──< rfi_images
                                 │
                                 └──< timesheet_entries
 
@@ -455,6 +456,7 @@ These tables are seeded by migration `002_seed_lookups.sql` and are read-only in
 | `002_seed_lookups.sql` | 2026-03-28 | Create and seed reference tables: ref_disciplines, ref_positions, ref_project_types, ref_work_type_groups, ref_work_types | Yes — DELETE + DROP statements in file comments | None — INSERT only |
 | `003_rfi.sql` | 2026-04-02 | Create RFI tables: rfis, rfi_comments, rfi_activity | Yes — DROP TABLE statements in file comments; WARNING: data loss | None — additive only |
 | `004_images_timesheet.sql` | 2026-04-03 | Add cover_image_url to projects; add avatar_url to users; create timesheet_entries table | Yes — rollback DDL in file comments; WARNING: timesheet data loss on step 3 rollback | Low — nullable column additions + new table; no existing rows affected |
+| `005_rfi_images.sql` | 2026-04-03 | Create rfi_images table for file attachments on RFIs and RFI comments (1–6 per RFI) | Yes — `DROP TABLE IF EXISTS rfi_images`; WARNING: data loss | None — additive only |
 
 See `docs/technical/MIGRATION_GUIDE.md` for the legacy data migration strategy (one-time, manual execution via SSMS) — migrates users, projects, and project_members from `cbimtech_dmc` and `cbimtech_TimeSheetWeb` into `cbimtech_raphael`. This is not a numbered migration file because it requires human discovery steps before running.
 

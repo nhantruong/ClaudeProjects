@@ -12,11 +12,43 @@
  *   DELETE /api/v1/rfis/:id/comments/:commentId     — delete comment
  */
 
+import { mkdirSync } from 'fs';
+import { join } from 'path';
+
 import { Router } from 'express';
+import multer from 'multer';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import * as rfiController from '../controllers/rfi.controller.js';
+
+// ---------------------------------------------------------------------------
+// Multer — disk storage for RFI image uploads
+// ---------------------------------------------------------------------------
+
+// Uploads directory: <project-root>/uploads/rfi  (one level above server/)
+const UPLOADS_DIR = join(process.cwd(), '..', 'uploads', 'rfi');
+mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const rfiStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = file.originalname.split('.').pop() ?? 'bin';
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`);
+  },
+});
+
+const upload = multer({
+  storage: rfiStorage,
+  limits: { fileSize: 10 * 1024 * 1024, files: 6 }, // 10 MB per file, max 6 files
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Validation schemas
@@ -93,3 +125,6 @@ rfiRouter.delete('/:id', rfiController.deleteRfi);
 
 rfiRouter.post('/:id/comments', validate(AddCommentSchema), rfiController.addComment);
 rfiRouter.delete('/:id/comments/:commentId', rfiController.deleteComment);
+
+rfiRouter.post('/:id/images', upload.array('images', 6), rfiController.uploadImages);
+rfiRouter.delete('/:id/images/:imageId', rfiController.deleteImage);

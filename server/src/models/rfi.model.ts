@@ -57,7 +57,7 @@ export interface RfiActivity {
 }
 
 export type RfiRow = Rfi & { commentCount: number };
-export type RfiDetail = Rfi & { comments: RfiComment[]; activity: RfiActivity[] };
+export type RfiDetail = Rfi & { comments: RfiComment[]; activity: RfiActivity[]; images: RfiImage[] };
 
 export interface RfiProjectStats {
   total: number;
@@ -294,10 +294,13 @@ export async function findById(id: number): Promise<RfiDetail | null> {
     { rfiId: { type: sql.Int, value: id } },
   );
 
+  const imageRows = await findImagesByRfi(id);
+
   return {
     ...rfi,
     comments: commentRows.map(rowToComment),
     activity: activityRows.map(rowToActivity),
+    images: imageRows,
   };
 }
 
@@ -665,4 +668,111 @@ export async function getProjectStats(projectId: number): Promise<RfiProjectStat
     slaCompliant:    row.sla_compliant,
     slaTotal:        row.sla_total,
   };
+}
+
+// ---------------------------------------------------------------------------
+// RFI image query functions
+// ---------------------------------------------------------------------------
+
+export interface RfiImage {
+  id: number;
+  rfiId: number;
+  commentId: number | null;
+  filename: string;
+  storagePath: string;
+  mimeType: string | null;
+  fileSize: number | null;
+  sortOrder: number;
+  uploadedBy: number;
+  createdAt: string;
+}
+
+interface RfiImageDbRow {
+  id: number;
+  rfi_id: number;
+  comment_id: number | null;
+  filename: string;
+  storage_path: string;
+  mime_type: string | null;
+  file_size: number | null;
+  sort_order: number;
+  uploaded_by: number;
+  created_at: string;
+}
+
+function rowToImage(row: RfiImageDbRow): RfiImage {
+  return {
+    id: row.id,
+    rfiId: row.rfi_id,
+    commentId: row.comment_id,
+    filename: row.filename,
+    storagePath: row.storage_path,
+    mimeType: row.mime_type,
+    fileSize: row.file_size,
+    sortOrder: row.sort_order,
+    uploadedBy: row.uploaded_by,
+    createdAt: row.created_at,
+  };
+}
+
+export async function findImagesByRfi(rfiId: number): Promise<RfiImage[]> {
+  const rows = await query<RfiImageDbRow>(
+    `SELECT id, rfi_id, comment_id, filename, storage_path, mime_type, file_size, sort_order, uploaded_by, created_at
+     FROM rfi_images
+     WHERE rfi_id = @rfiId
+     ORDER BY sort_order ASC, id ASC`,
+    { rfiId: { type: sql.Int, value: rfiId } },
+  );
+  return rows.map(rowToImage);
+}
+
+export async function countImagesByRfi(rfiId: number): Promise<number> {
+  const rows = await query<{ cnt: number }>(
+    `SELECT COUNT(*) AS cnt FROM rfi_images WHERE rfi_id = @rfiId AND comment_id IS NULL`,
+    { rfiId: { type: sql.Int, value: rfiId } },
+  );
+  return rows[0]?.cnt ?? 0;
+}
+
+export async function insertImage(data: {
+  rfiId: number;
+  commentId?: number | null;
+  filename: string;
+  storagePath: string;
+  mimeType?: string | null;
+  fileSize?: number | null;
+  sortOrder?: number;
+  uploadedBy: number;
+}): Promise<RfiImage> {
+  const rows = await query<RfiImageDbRow>(
+    `INSERT INTO rfi_images (rfi_id, comment_id, filename, storage_path, mime_type, file_size, sort_order, uploaded_by)
+     OUTPUT INSERTED.id, INSERTED.rfi_id, INSERTED.comment_id, INSERTED.filename,
+            INSERTED.storage_path, INSERTED.mime_type, INSERTED.file_size,
+            INSERTED.sort_order, INSERTED.uploaded_by, INSERTED.created_at
+     VALUES (@rfiId, @commentId, @filename, @storagePath, @mimeType, @fileSize, @sortOrder, @uploadedBy)`,
+    {
+      rfiId:       { type: sql.Int,           value: data.rfiId },
+      commentId:   { type: sql.Int,           value: data.commentId ?? null },
+      filename:    { type: sql.NVarChar(255),  value: data.filename },
+      storagePath: { type: sql.NVarChar(500),  value: data.storagePath },
+      mimeType:    { type: sql.NVarChar(100),  value: data.mimeType ?? null },
+      fileSize:    { type: sql.BigInt,         value: data.fileSize ?? null },
+      sortOrder:   { type: sql.Int,           value: data.sortOrder ?? 0 },
+      uploadedBy:  { type: sql.Int,           value: data.uploadedBy },
+    },
+  );
+  if (!rows[0]) throw new Error('insertImage: INSERT did not return a row');
+  return rowToImage(rows[0]);
+}
+
+export async function removeImage(id: number): Promise<RfiImage | null> {
+  const rows = await query<RfiImageDbRow>(
+    `DELETE FROM rfi_images
+     OUTPUT DELETED.id, DELETED.rfi_id, DELETED.comment_id, DELETED.filename,
+            DELETED.storage_path, DELETED.mime_type, DELETED.file_size,
+            DELETED.sort_order, DELETED.uploaded_by, DELETED.created_at
+     WHERE id = @id`,
+    { id: { type: sql.Int, value: id } },
+  );
+  return rows[0] ? rowToImage(rows[0]) : null;
 }

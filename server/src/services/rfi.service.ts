@@ -5,6 +5,9 @@
  * Every operation checks project membership before proceeding.
  */
 
+import { unlink } from 'fs/promises';
+import { join } from 'path';
+
 import { AppError } from '../middleware/errorHandler.js';
 import { isProjectMember } from '../models/project.model.js';
 import * as rfiModel from '../models/rfi.model.js';
@@ -14,11 +17,12 @@ import type {
   RfiDetail,
   RfiComment,
   RfiActivity,
+  RfiImage,
   RfiProjectStats,
   ListRfisFilters,
 } from '../models/rfi.model.js';
 
-export type { Rfi, RfiRow, RfiDetail, RfiComment, RfiActivity, RfiProjectStats, ListRfisFilters };
+export type { Rfi, RfiRow, RfiDetail, RfiComment, RfiActivity, RfiImage, RfiProjectStats, ListRfisFilters };
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -194,4 +198,66 @@ export async function getProjectStats(
 ): Promise<RfiProjectStats> {
   await assertProjectMember(projectId, userId);
   return rfiModel.getProjectStats(projectId);
+}
+
+// ---------------------------------------------------------------------------
+// Image operations
+// ---------------------------------------------------------------------------
+
+const MAX_IMAGES_PER_RFI = 6;
+// Uploads live one level above server/ at the project root: <root>/uploads/rfi/
+const UPLOADS_DIR = join(process.cwd(), '..', 'uploads', 'rfi');
+
+export async function addImage(
+  rfiId: number,
+  userId: number,
+  fileData: {
+    filename: string;
+    storagePath: string;
+    mimeType?: string;
+    fileSize?: number;
+    commentId?: number | null;
+  },
+): Promise<RfiImage> {
+  const rfi = await assertRfiExists(rfiId);
+  await assertProjectMember(rfi.projectId, userId);
+
+  // Enforce max 6 images per RFI (comment images are not counted against the limit)
+  if (!fileData.commentId) {
+    const count = await rfiModel.countImagesByRfi(rfiId);
+    if (count >= MAX_IMAGES_PER_RFI) {
+      throw new AppError(422, 'VALIDATION_ERROR', `Maximum ${MAX_IMAGES_PER_RFI} images per RFI`);
+    }
+  }
+
+  return rfiModel.insertImage({
+    rfiId,
+    commentId: fileData.commentId ?? null,
+    filename: fileData.filename,
+    storagePath: fileData.storagePath,
+    mimeType: fileData.mimeType ?? null,
+    fileSize: fileData.fileSize ?? null,
+    uploadedBy: userId,
+  });
+}
+
+export async function removeImage(
+  rfiId: number,
+  imageId: number,
+  userId: number,
+): Promise<void> {
+  const rfi = await assertRfiExists(rfiId);
+  await assertProjectMember(rfi.projectId, userId);
+
+  const deleted = await rfiModel.removeImage(imageId);
+  if (!deleted) {
+    throw new AppError(404, 'NOT_FOUND', 'Image not found');
+  }
+
+  // Delete the physical file — failure here is non-fatal (file may already be gone)
+  try {
+    await unlink(join(UPLOADS_DIR, deleted.filename));
+  } catch {
+    // Intentionally swallowed — orphaned file is a maintenance concern, not a request error
+  }
 }

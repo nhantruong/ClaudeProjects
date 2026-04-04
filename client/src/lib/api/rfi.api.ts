@@ -1,4 +1,4 @@
-import { get, post, patch, del } from '@/lib/api';
+import { get, post, patch, del, apiClient } from '@/lib/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -56,7 +56,20 @@ export interface RfiActivity {
   createdAt: string;
 }
 
-export type RfiDetail = Rfi & { comments: RfiComment[]; activity: RfiActivity[] };
+export interface RfiImage {
+  id: number;
+  rfiId: number;
+  commentId: number | null;
+  filename: string;
+  storagePath: string;
+  mimeType: string | null;
+  fileSize: number | null;
+  sortOrder: number;
+  uploadedBy: number;
+  createdAt: string;
+}
+
+export type RfiDetail = Rfi & { comments: RfiComment[]; activity: RfiActivity[]; images: RfiImage[] };
 
 export interface RfiProjectStats {
   total: number;
@@ -135,4 +148,18 @@ export const rfiApi = {
 
   deleteComment: (id: number, commentId: number) =>
     del<void>(`/rfis/${id}/comments/${commentId}`),
+
+  uploadImages: (id: number, files: File[], commentId?: number) => {
+    const form = new FormData();
+    files.forEach((f) => form.append('images', f));
+    if (commentId != null) form.append('commentId', String(commentId));
+    return apiClient
+      .post<{ images: RfiImage[] }>(`/rfis/${id}/images`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data);
+  },
+
+  deleteImage: (id: number, imageId: number) =>
+    del<void>(`/rfis/${id}/images/${imageId}`),
 };
