@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Send, Clock, MessageSquare, Activity, Save, ChevronDown, ImagePlus, X, Loader2, ZoomIn } from 'lucide-react';
+import { Send, Clock, MessageSquare, Activity, Save, ChevronDown, ImagePlus, X, Loader2, ZoomIn, Download } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { rfiApi, type RfiDetail as RfiDetailType, type RfiStatus, type RfiImage } from '@/lib/api/rfi.api';
+import { reportsApi } from '@/lib/api/reports.api';
 import {
   DISCIPLINE_COLORS, STATUS_BADGE, PRIORITY_DOT, slaLabel, formatRelativeDate, getInitials,
 } from './rfi.utils';
@@ -156,8 +157,22 @@ export function RfiDetailPanel({ rfi, onUpdated }: Props) {
   const [comment, setComment] = useState('');
   const [commentImages, setCommentImages] = useState<File[]>([]);
   const [pendingRfiImages, setPendingRfiImages] = useState<File[]>([]);
+  const [isExportingDetail, setIsExportingDetail] = useState(false);
+  const [exportDetailError, setExportDetailError] = useState<string | null>(null);
   const sla = slaLabel(rfi.status, rfi.requiredDate);
-  const dc = DISCIPLINE_COLORS[rfi.discipline] ?? DISCIPLINE_COLORS['General']!;
+  const dc = DISCIPLINE_COLORS[rfi.discipline] ?? DISCIPLINE_COLORS['General']!
+
+  async function handleExportDetailPdf() {
+    setIsExportingDetail(true);
+    setExportDetailError(null);
+    try {
+      await reportsApi.downloadRfiDetailPdf(rfi.id, rfi.rfiNumber);
+    } catch (err) {
+      setExportDetailError(err instanceof Error ? err.message : 'Export failed. Please try again.');
+    } finally {
+      setIsExportingDetail(false);
+    }
+  };
 
   // Existing RFI-level images (no commentId)
   const rfiImages = rfi.images.filter((img) => img.commentId == null);
@@ -263,14 +278,33 @@ export function RfiDetailPanel({ rfi, onUpdated }: Props) {
             </div>
             <h2 className="text-heading-3 text-text-default leading-snug">{rfi.title}</h2>
           </div>
-          <button
-            onClick={handleSaveResponse}
-            disabled={updateMut.isPending || uploadRfiImagesMut.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-success-500/20 border border-success-500/30 text-success-400 rounded-full text-caption font-medium hover:bg-success-500/30 transition-colors disabled:opacity-50 flex-shrink-0"
-          >
-            {uploadRfiImagesMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-            Save
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {exportDetailError && (
+              <span role="alert" className="text-caption text-error-400">{exportDetailError}</span>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleExportDetailPdf()}
+              disabled={isExportingDetail}
+              data-testid="export-rfi-detail-pdf"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-elevated border border-border text-text-muted rounded-full text-caption font-medium hover:text-text-default hover:bg-surface-card transition-colors disabled:opacity-50"
+            >
+              {isExportingDetail ? (
+                <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" aria-hidden="true" />
+              ) : (
+                <Download size={13} aria-hidden="true" />
+              )}
+              {isExportingDetail ? 'Exporting...' : 'Export PDF'}
+            </button>
+            <button
+              onClick={handleSaveResponse}
+              disabled={updateMut.isPending || uploadRfiImagesMut.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-success-500/20 border border-success-500/30 text-success-400 rounded-full text-caption font-medium hover:bg-success-500/30 transition-colors disabled:opacity-50"
+            >
+              {uploadRfiImagesMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+              Save
+            </button>
+          </div>
         </div>
 
         {/* Meta chips */}

@@ -24,6 +24,7 @@
     "morgan": "^1.10.0",
     "mssql": "^11.0.1",
     "multer": "^2.1.1",
+    "pdfkit": "^0.18.0",
     "winston": "^3.17.0",
     "zod": "^3.24.1"
   },
@@ -37,6 +38,7 @@
     "@types/mssql": "^9.1.5",
     "@types/multer": "^2.1.0",
     "@types/node": "^22.10.5",
+    "@types/pdfkit": "^0.17.5",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^3.0.0",

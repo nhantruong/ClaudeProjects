@@ -10,6 +10,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CalendarIcon,
+  Download,
 } from 'lucide-react';
 import { z } from 'zod';
 import { timesheetApi } from '@/lib/api/timesheet.api';
@@ -17,6 +18,7 @@ import type { TimesheetEntry, CreateTimesheetInput, UpdateTimesheetInput } from 
 import { projectsApi } from '@/lib/api/projects.api';
 import { lookupApi } from '@/lib/api/lookup.api';
 import type { WorkType } from '@/lib/api/lookup.api';
+import { reportsApi } from '@/lib/api/reports.api';
 import { cn, formatDate } from '@/lib/utils';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -260,6 +262,22 @@ function EntriesTab({ projects, workTypes }: { projects: Array<{ id: number; nam
   const [showForm, setShowForm] = useState(false);
   const [editEntry, setEditEntry] = useState<TimesheetEntry | null>(null);
   const [filterProjectId, setFilterProjectId] = useState<string>('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  async function handleExportPdf() {
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      await reportsApi.downloadTimesheetPdf(
+        filterProjectId ? { projectId: Number(filterProjectId) } : {},
+      );
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['timesheet', 'entries', filterProjectId],
@@ -296,20 +314,39 @@ function EntriesTab({ projects, workTypes }: { projects: Array<{ id: number; nam
             </span>
           )}
         </div>
-        {!showForm && !editEntry && (
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setShowForm(true)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg text-body text-white font-medium',
-              'bg-accent-teal-500 hover:bg-accent-teal-600 transition-colors'
-            )}
+            onClick={() => void handleExportPdf()}
+            disabled={isExporting}
+            data-testid="export-timesheet-pdf"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded border border-border-default text-text-muted hover:text-text-default hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <PlusIcon size={16} />
-            Add Entry
+            {isExporting ? (
+              <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" aria-hidden="true" />
+            ) : (
+              <Download size={14} aria-hidden="true" />
+            )}
+            {isExporting ? 'Exporting...' : 'Export PDF'}
           </button>
-        )}
+          {!showForm && !editEntry && (
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-body text-white font-medium',
+                'bg-accent-teal-500 hover:bg-accent-teal-600 transition-colors'
+              )}
+            >
+              <PlusIcon size={16} />
+              Add Entry
+            </button>
+          )}
+        </div>
       </div>
+      {exportError && (
+        <p role="alert" className="text-caption text-error-400">{exportError}</p>
+      )}
 
       {/* Add / Edit form */}
       {(showForm || editEntry) && (

@@ -1688,10 +1688,65 @@ Ask the AI advisor a natural language question about project status. *(FR-083)*
 
 ---
 
+### Reports (PDF)
+
+All report endpoints return `application/pdf` with a `Content-Disposition: attachment` header. The PDF is streamed directly — no JSON body.
+
+#### GET /reports/timesheet
+
+**Auth required**: Yes
+**Description**: Generates a timesheet PDF report. Admin and Manager users can pass an optional `userId` to export any user's data; Member users are always restricted to their own data.
+
+**Query parameters** (all optional):
+- `from` — start date filter: `YYYY-MM-DD`
+- `to` — end date filter: `YYYY-MM-DD`
+- `userId` — filter to a specific user (admin/manager only; ignored for members)
+- `projectId` — filter to a specific project
+
+**Response 200**: `application/pdf` — landscape A4. Columns: #, Date, Member, Project, Work Type, Hours, Description. Footer shows total hours and entry count.
+
+**Error codes**:
+- `401` — Not authenticated
+
+---
+
+#### GET /projects/:projectId/reports/rfi
+
+**Auth required**: Yes — project members only
+**Description**: Generates an RFI summary PDF for the specified project. All RFIs for the project are included. Header shows aggregate counts (total, open, under review, responded, closed, overdue).
+
+**Request body**: None
+
+**Response 200**: `application/pdf` — landscape A4. Columns: #, RFI #, Priority, Status, Discipline, Date Submitted, Required Date, Response Date, Title, Submitted By, Assigned To.
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Project not found
+
+---
+
+#### GET /rfis/:id/report
+
+**Auth required**: Yes — project members only
+**Description**: Generates a detailed single-RFI PDF including all metadata fields, description, response, embedded images (from disk), and comments.
+
+**Request body**: None
+
+**Response 200**: `application/pdf` — portrait A4. Sections: info block (10 metadata fields), description, response, images (up to 3 per row), comments.
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — RFI not found
+
+---
+
 ## Changelog
 
 | Date | Change |
 |------|--------|
+| 2026-04-06 | PDF report endpoints implemented — GET /reports/timesheet, GET /projects/:projectId/reports/rfi, GET /rfis/:id/report |
 | 2026-04-04 | Lookup endpoints implemented — GET /lookups/work-types |
 | 2026-04-04 | RFI image upload endpoints implemented — POST/DELETE /rfis/:id/images; GET /rfis/:id now includes images array |
 | 2026-04-04 | RFI endpoints documented — GET/POST /projects/:projectId/rfis, GET /projects/:projectId/rfis/stats, GET/PATCH/DELETE /rfis/:id, POST/DELETE /rfis/:id/comments |

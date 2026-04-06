@@ -32,6 +32,7 @@ import leanRouter from './routes/lean.routes.js';
 import { projectRfiRouter, rfiRouter } from './routes/rfi.routes.js';
 import timesheetRouter from './routes/timesheet.routes.js';
 import lookupRouter from './routes/lookup.routes.js';
+import { reportsRouter, projectReportsRouter, rfiReportRouter } from './routes/reports.routes.js';
 
 export function createApp(): express.Application {
   const app = express();
@@ -95,6 +96,10 @@ export function createApp(): express.Application {
   app.use(`${prefix}/rfis`, rfiRouter);
   app.use(`${prefix}/timesheets`, timesheetRouter);
   app.use(`${prefix}/lookups`, lookupRouter);
+  // PDF report endpoints
+  app.use(`${prefix}/reports`, reportsRouter);
+  app.use(`${prefix}/projects/:projectId`, projectReportsRouter);
+  app.use(`${prefix}/rfis`, rfiReportRouter);
 
   // ── Static uploads ───────────────────────────────────────────────────────
   // Serves user-uploaded files (RFI images, etc.) from /uploads/.

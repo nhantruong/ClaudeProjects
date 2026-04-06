@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useParams } from '@tanstack/react-router';
-import { LayoutDashboard, FileText } from 'lucide-react';
+import { LayoutDashboard, FileText, Download } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { rfiApi } from '@/lib/api/rfi.api';
+import { projectsApi } from '@/lib/api/projects.api';
+import { reportsApi } from '@/lib/api/reports.api';
 import { RfiList } from '@/features/rfi/RfiList';
 import { RfiDashboard } from '@/features/rfi/RfiDashboard';
 import { RfiDetailPanel } from '@/features/rfi/RfiDetail';
@@ -18,6 +20,27 @@ export function RfiPage() {
   const [tab, setTab]           = useState<Tab>('dashboard');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showModal, setShowModal]   = useState(false);
+  const [isExportingSummary, setIsExportingSummary] = useState(false);
+  const [exportSummaryError, setExportSummaryError] = useState<string | null>(null);
+
+  const projectQ = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: () => projectsApi.get(projectId),
+    staleTime: 60_000,
+  });
+  const projectName = projectQ.data?.project.name ?? 'project';
+
+  async function handleExportSummaryPdf() {
+    setIsExportingSummary(true);
+    setExportSummaryError(null);
+    try {
+      await reportsApi.downloadRfiSummaryPdf(projectId, projectName);
+    } catch (err) {
+      setExportSummaryError(err instanceof Error ? err.message : 'Export failed. Please try again.');
+    } finally {
+      setIsExportingSummary(false);
+    }
+  }
 
   const rfiDetailQ = useQuery({
     queryKey: ['rfi', selectedId],
@@ -64,6 +87,25 @@ export function RfiPage() {
           <FileText size={14} />
           RFI List
         </button>
+        <div className="ml-auto flex items-center gap-2 py-1.5">
+          {exportSummaryError && (
+            <span role="alert" className="text-caption text-error-400">{exportSummaryError}</span>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleExportSummaryPdf()}
+            disabled={isExportingSummary}
+            data-testid="export-rfi-summary-pdf"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-body-small font-medium rounded border border-border-default text-text-muted hover:text-text-default hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isExportingSummary ? (
+              <span className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full" aria-hidden="true" />
+            ) : (
+              <Download size={13} aria-hidden="true" />
+            )}
+            {isExportingSummary ? 'Exporting...' : 'Export Summary PDF'}
+          </button>
+        </div>
       </div>
 
       {/* Content */}
