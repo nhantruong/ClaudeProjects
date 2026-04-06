@@ -261,17 +261,26 @@ export function GanttChart({ tasks, projectId, zoom }: GanttChartProps) {
 
   // ── Dependency arrows ────────────────────────────────────────────────────────
 
-  // Build arrow paths from task.dependsOn — but the list endpoint doesn't return
-  // dependsOn. We derive a simplified version from same-project tasks whose IDs
-  // appear in each other's list. Since the list endpoint doesn't include
-  // dependency arrays, we skip arrows when data isn't available (detail endpoint
-  // is per-task, expensive to batch here). The arrows data can be passed as prop
-  // in a future iteration once bulk dependency data is available.
-  //
-  // For now, the arrows structure is prepared but left empty — the architecture
-  // is in place for when bulk dependency data is piped in.
-
-  const dependencyArrows: Array<{ fromIndex: number; toIndex: number }> = [];
+  // Build a taskId → scheduledTasks index map, then derive fromIndex/toIndex
+  // pairs from each task's dependsOn array (now returned by the list endpoint).
+  // Only arrows where BOTH tasks are scheduled (have start + due dates) are shown.
+  const dependencyArrows = useMemo(() => {
+    const indexById = new Map<number, number>(
+      scheduledTasks.map((t, i) => [t.id, i]),
+    );
+    const arrows: Array<{ fromIndex: number; toIndex: number }> = [];
+    for (const task of scheduledTasks) {
+      const toIndex = indexById.get(task.id);
+      if (toIndex === undefined) continue;
+      for (const depId of task.dependsOn ?? []) {
+        const fromIndex = indexById.get(depId);
+        if (fromIndex !== undefined) {
+          arrows.push({ fromIndex, toIndex });
+        }
+      }
+    }
+    return arrows;
+  }, [scheduledTasks]);
 
   // ── Date-update mutation ────────────────────────────────────────────────────
 

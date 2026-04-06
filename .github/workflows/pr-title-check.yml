@@ -1,0 +1,37 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  check-pr-title:
+    name: Validate PR Title (Conventional Commits)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check PR title format
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          PATTERN='^(feat|fix|docs|style|refactor|test|chore|perf|ci)(\(.+\))?: .+'
+          if echo "$PR_TITLE" | grep -qE "$PATTERN"; then
+            echo "PR title is valid: $PR_TITLE"
+          else
+            echo ""
+            echo "ERROR: PR title does not follow Conventional Commits format."
+            echo ""
+            echo "  Title: $PR_TITLE"
+            echo ""
+            echo "  Required format:  type(scope): description"
+            echo "  Example:          feat(kanban): add drag-to-reorder task cards"
+            echo ""
+            echo "  Allowed types: feat | fix | docs | style | refactor | test | chore | perf | ci"
+            echo ""
+            echo "  The scope is optional but encouraged. Examples:"
+            echo "    feat(auth): ..."
+            echo "    fix: ..."
+            echo "    chore(deps): ..."
+            echo ""
+            exit 1
+          fi

@@ -73,6 +73,8 @@ export interface Task {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  dependsOn?: number[];
+  blocks?: number[];
 }
 
 export interface Subtask {

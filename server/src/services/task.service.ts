@@ -23,10 +23,20 @@ import type {
   Subtask,
   Comment,
   ListTasksFilters,
+  TaskDependency,
 } from '../models/task.model.js';
 
 // Re-export types so controllers do not need to import from the model
-export type { Task, TaskDetail, TaskStatus, TaskPriority, Subtask, Comment, ListTasksFilters };
+export type {
+  Task,
+  TaskDetail,
+  TaskStatus,
+  TaskPriority,
+  Subtask,
+  Comment,
+  ListTasksFilters,
+  TaskDependency,
+};
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -97,6 +107,10 @@ async function detectCycle(startTaskId: number, targetTaskId: number): Promise<b
 /**
  * listTasks — returns all tasks in a project, with optional filters.
  *
+ * Each task includes `dependsOn` (upstream task IDs) and `blocks` (downstream
+ * task IDs) arrays derived from a single bulk dependency query. This enables
+ * the Gantt chart to render dependency arrows without N per-task requests.
+ *
  * @throws AppError 403 if the requesting user is not a project member.
  */
 export async function listTasks(
@@ -105,7 +119,29 @@ export async function listTasks(
   filters?: ListTasksFilters,
 ): Promise<Task[]> {
   await assertProjectMember(projectId, requestingUserId);
-  return taskModel.listTasks(projectId, filters);
+
+  const [tasks, deps] = await Promise.all([
+    taskModel.listTasks(projectId, filters),
+    taskModel.getDependenciesByProject(projectId),
+  ]);
+
+  // Build lookup maps — O(deps) time, then O(1) per task
+  const dependsOnMap = new Map<number, number[]>();
+  const blocksMap = new Map<number, number[]>();
+
+  for (const dep of deps) {
+    if (!dependsOnMap.has(dep.taskId)) dependsOnMap.set(dep.taskId, []);
+    dependsOnMap.get(dep.taskId)!.push(dep.dependsOnTaskId);
+
+    if (!blocksMap.has(dep.dependsOnTaskId)) blocksMap.set(dep.dependsOnTaskId, []);
+    blocksMap.get(dep.dependsOnTaskId)!.push(dep.taskId);
+  }
+
+  return tasks.map((task) => ({
+    ...task,
+    dependsOn: dependsOnMap.get(task.id) ?? [],
+    blocks: blocksMap.get(task.id) ?? [],
+  }));
 }
 
 /**

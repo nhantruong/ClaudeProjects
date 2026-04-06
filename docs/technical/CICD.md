@@ -1,15 +1,15 @@
 # CI/CD and Deployment
 
-> Last updated: 2026-04-01
+> Last updated: 2026-04-06
 > Version: 0.1.0
 
 ---
 
 ## Overview
 
-Raphael is deployed manually to a Plesk Obsidian server at `rasphael.cbimtech.com` (IP: 103.27.60.66). There is no automated CI/CD pipeline yet — deployments are performed by uploading built artifacts via the Plesk File Manager and configuring the Node.js app through the Plesk Node.js extension.
+Raphael is deployed manually to a Plesk Obsidian server at `rasphael.cbimtech.com` (IP: 103.27.60.66). Deployments are performed by uploading built artifacts via the Plesk File Manager and configuring the Node.js app through the Plesk Node.js extension.
 
-A GitHub Actions pipeline is planned for a future task.
+A GitHub Actions CI pipeline (`ci.yml`) and PR title check (`pr-title-check.yml`) are now implemented. Automated deployment (SSH to Plesk) is planned for a future task once the team confirms SSH access to the server.
 
 ---
 
@@ -195,50 +195,86 @@ These values must be set on the server before the application starts. None are s
 
 ---
 
-## Planned: GitHub Actions CI/CD Pipeline
+## GitHub Actions Workflows
 
-The following pipeline is planned for a future task. It is not yet implemented.
+### ci.yml
 
-### Intended workflow structure
+**Trigger**: Push to `main`; pull request targeting `main`
+**Purpose**: Fast feedback on every code change — fails within ~2 minutes if lint, typecheck, or unit tests break. The build job is gated behind both quality checks and confirms both workspaces compile and bundle successfully.
 
-```
-.github/workflows/
-  ci.yml          — lint, typecheck, unit tests on every PR
-  deploy.yml      — build + upload to Plesk on merge to main
-```
+#### Jobs
 
-### Intended deploy.yml behaviour
+| Job | Runs when | Description |
+|-----|-----------|-------------|
+| `lint-and-typecheck` (matrix: client, server) | Always — parallel | `npm run lint` + `npm run typecheck` in each workspace. `fail-fast: true` stops the matrix on first failure. |
+| `unit-tests` (matrix: client, server) | Always — parallel | `npm test -- --coverage` in each workspace. `fail-fast: false` so both workspaces always report. Uploads coverage to GitHub artifacts (7-day retention). |
+| `build` | After `lint-and-typecheck` AND `unit-tests` both pass | `npm run build` in `server/` then `client/`. Uploads `server-dist` and `client-dist` artifacts (3-day retention). |
 
-1. Trigger: push to `main`
-2. Jobs:
-   - `ci` — lint, typecheck, `npm test`
-   - `build` — `npm run build` in both `server/` and `client/`
-   - `deploy` — SSH into the Plesk server, upload artifacts, restart the Node.js app
-3. Required secrets (GitHub repo Settings > Secrets):
+#### Cache strategy
 
-| Secret | Description |
-|--------|-------------|
-| `PLESK_SSH_HOST` | `103.27.60.66` |
-| `PLESK_SSH_USER` | SSH username on the Plesk server |
-| `PLESK_SSH_KEY` | Private key for SSH authentication |
-| `PLESK_APP_ROOT` | Absolute path to the app root (`/httpdocs/server`) |
-| `SESSION_SECRET` | Same value as the server `.env` |
-| `DB_PASSWORD` | MS SQL Server password |
-| `AI_API_KEY` | Anthropic API key |
+- `lint-and-typecheck` and `unit-tests`: `actions/setup-node@v4` with `cache: npm` keyed on `<workspace>/package-lock.json` — handles `node_modules` automatically.
+- `build`: explicit `actions/cache@v4` entries for `server/node_modules`, `client/node_modules`, and `client/node_modules/.vite` (Vite incremental build cache keyed on lock file hash + source file hashes).
 
-### Security scanning (to be added to ci.yml)
+#### Required Secrets
 
-Per pipeline security policy, the following scans must be included:
+None — this workflow performs no deployment and requires no credentials.
 
-```yaml
-- name: Dependency vulnerability audit (server)
-  run: cd server && npm audit --audit-level=high
+---
 
-- name: Dependency vulnerability audit (client)
-  run: cd client && npm audit --audit-level=high
-```
+### pr-title-check.yml
 
-CodeQL analysis will be added once the GitHub Actions pipeline is in place. Container scanning is not required — there is no Docker image for this project.
+**Trigger**: `pull_request` events: opened, synchronize, reopened, edited
+**Purpose**: Enforces Conventional Commits format on PR titles before merge. Fails with a descriptive error message if the title does not match the required pattern.
+
+#### Jobs
+
+| Job | Runs when | Description |
+|-----|-----------|-------------|
+| `check-pr-title` | Always | Validates `github.event.pull_request.title` against the pattern `^(feat\|fix\|docs\|style\|refactor\|test\|chore\|perf\|ci)(\(.+\))?: .+`. Exits 1 with a clear error explaining the format if it does not match. |
+
+#### Required Secrets
+
+None.
+
+---
+
+### Planned: deploy.yml
+
+Not yet implemented — blocked on confirming SSH access to the Plesk server.
+
+Intended behaviour when implemented:
+
+1. Trigger: push to `main` after `ci.yml` passes
+2. Jobs: `build` → `deploy` (SSH to Plesk, upload artifacts, `npm install --production`, restart Node.js app)
+3. Required secrets to configure in GitHub repo Settings > Secrets when this is implemented:
+
+| Secret | Where to set | Description |
+|--------|-------------|-------------|
+| `PLESK_SSH_HOST` | GitHub repo Settings > Secrets | `103.27.60.66` |
+| `PLESK_SSH_USER` | GitHub repo Settings > Secrets | SSH username on the Plesk server |
+| `PLESK_SSH_KEY` | GitHub repo Settings > Secrets | Private key for SSH authentication |
+| `PLESK_APP_ROOT` | GitHub repo Settings > Secrets | Absolute path to server app root (`/httpdocs/server`) |
+
+---
+
+### Planned: security.yml
+
+Security scanning to add once the basic pipeline is validated:
+
+- **Dependency audit**: `npm audit --audit-level=high` in both `server/` and `client/` — fails on high/critical vulnerabilities
+- **CodeQL**: `github/codeql-action/analyze@v3` on `javascript`/`typescript` — static analysis for common vulnerability classes (injection, path traversal, insecure deserialization)
+- Container scanning is not required — no Docker image for this project
+
+---
+
+### Branch Protection Recommended Settings
+
+Configure these in GitHub repo Settings > Branches > `main`:
+
+- Require status checks to pass before merging: `lint-and-typecheck (client)`, `lint-and-typecheck (server)`, `unit-tests (client)`, `unit-tests (server)`, `build`, `check-pr-title`
+- Require branches to be up to date before merging
+- Require at least 1 approving review
+- Do not allow force pushes
 
 ---
 

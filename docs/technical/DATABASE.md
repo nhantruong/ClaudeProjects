@@ -3,7 +3,7 @@
 > **Engine**: MS SQL Server 2019+
 > **ORM / Query layer**: Raw SQL via `mssql` Node.js driver (raw SQL per ADR-001)
 > **Connection**: Via `DB_SERVER`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` environment variables
-> **Last updated**: 2026-04-03
+> **Last updated**: 2026-04-06
 
 ---
 
@@ -457,8 +457,61 @@ These tables are seeded by migration `002_seed_lookups.sql` and are read-only in
 | `003_rfi.sql` | 2026-04-02 | Create RFI tables: rfis, rfi_comments, rfi_activity | Yes — DROP TABLE statements in file comments; WARNING: data loss | None — additive only |
 | `004_images_timesheet.sql` | 2026-04-03 | Add cover_image_url to projects; add avatar_url to users; create timesheet_entries table | Yes — rollback DDL in file comments; WARNING: timesheet data loss on step 3 rollback | Low — nullable column additions + new table; no existing rows affected |
 | `005_rfi_images.sql` | 2026-04-03 | Create rfi_images table for file attachments on RFIs and RFI comments (1–6 per RFI) | Yes — `DROP TABLE IF EXISTS rfi_images`; WARNING: data loss | None — additive only |
+| `006_schema_migrations.sql` | 2026-04-06 | Create schema_migrations tracking table (IF NOT EXISTS guard — idempotent). Used by the migration runner to track applied files. | Yes — `DROP TABLE IF EXISTS schema_migrations`; WARNING: loses migration tracking history | None — additive only |
 
 See `docs/technical/MIGRATION_GUIDE.md` for the legacy data migration strategy (one-time, manual execution via SSMS) — migrates users, projects, and project_members from `cbimtech_dmc` and `cbimtech_TimeSheetWeb` into `cbimtech_raphael`. This is not a numbered migration file because it requires human discovery steps before running.
+
+---
+
+## Running Migrations
+
+The migration runner lives at `server/src/db/migrate.ts`. It is a standalone Node.js script — not part of the Express application. Run it from the `server/` directory.
+
+### Running pending migrations
+
+```bash
+# From server/
+npm run db:migrate
+```
+
+The runner:
+1. Reads `DB_*` variables from `server/.env` (variables already in the environment take precedence).
+2. Connects to MS SQL Server.
+3. Ensures the `schema_migrations` tracking table exists (inline `IF NOT EXISTS` guard — safe on any environment).
+4. Reads all `*.sql` files from `server/src/db/migrations/` sorted lexicographically.
+5. For each file: skips if its filename is already recorded in `schema_migrations`; otherwise executes the file and inserts a tracking row.
+6. Prints a summary (N run, N skipped) and exits 0 on success, 1 on error.
+
+It is safe to run multiple times — already-applied migrations are always skipped.
+
+### First-time setup on a new environment
+
+```bash
+# From server/
+npm run db:migrate
+```
+
+No manual steps are required. The tracking table is created automatically on the first run.
+
+### Adding a new migration
+
+1. Create a file in `server/src/db/migrations/` with the next sequential prefix: `007_description.sql`.
+2. Write valid T-SQL. Use `GO` as a batch separator where needed — the runner splits on `GO` automatically before sending batches to the driver.
+3. Run `npm run db:migrate` to apply it.
+
+### Checking migration status (via SSMS or sqlcmd)
+
+```sql
+SELECT filename, applied_at FROM schema_migrations ORDER BY filename;
+```
+
+### Rollback
+
+The runner applies migrations forward only. To roll back, execute the rollback DDL from the migration file's comments manually via SSMS, then delete the corresponding row from `schema_migrations`:
+
+```sql
+DELETE FROM schema_migrations WHERE filename = N'007_description.sql';
+```
 
 ---
 
@@ -612,7 +665,7 @@ ORDER BY p.name, t.title;
 
 | Issue | Impact | Plan |
 |-------|--------|------|
-| No migration runner configured | Migrations must be executed manually via SSMS or sqlcmd | @backend-developer to configure a migration runner (e.g., db-migrate or custom script) in task #003 |
+| ~~No migration runner configured~~ | **Resolved** — `npm run db:migrate` runs all pending migrations from `server/src/db/migrations/*.sql`. Tracks applied files in the `schema_migrations` table. The runner ensures the table exists automatically on first run. See the "Running Migrations" section above. | — |
 | updated_at not auto-maintained | Application must set updated_at on every UPDATE; no trigger | Accept for v1; add a trigger or handle in the model layer |
 | No full-text index on task descriptions | LIKE '%keyword%' searches will be slow on large datasets | Add a full-text catalog and index on tasks.description if search is prioritised in v2 |
 | Circular dependency detection | The schema prevents self-referencing (CK_task_deps_no_self) but not longer cycles (A→B→A) | Enforce cycle detection in the application service layer before inserting a dependency row |

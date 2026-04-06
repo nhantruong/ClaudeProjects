@@ -34,6 +34,8 @@ export interface Task {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  dependsOn?: number[];
+  blocks?: number[];
 }
 
 export interface Subtask {
@@ -627,4 +629,26 @@ export async function getTaskDependents(taskId: number): Promise<number[]> {
   );
 
   return rows.map((r) => r.task_id);
+}
+
+/**
+ * getDependenciesByProject — returns all dependency rows for every task in a
+ * project in a single query. Used to attach dependsOn / blocks arrays to the
+ * bulk task list response (e.g. Gantt chart dependency arrows).
+ */
+export async function getDependenciesByProject(
+  projectId: number,
+): Promise<TaskDependency[]> {
+  const rows = await query<{ task_id: number; depends_on_task_id: number }>(
+    `SELECT td.task_id, td.depends_on_task_id
+     FROM task_dependencies td
+     INNER JOIN tasks t ON t.id = td.task_id
+     WHERE t.project_id = @projectId`,
+    { projectId: { type: sql.Int, value: projectId } },
+  );
+
+  return rows.map((r) => ({
+    taskId: r.task_id,
+    dependsOnTaskId: r.depends_on_task_id,
+  }));
 }

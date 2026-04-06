@@ -8,7 +8,7 @@ Read by: @qa-engineer (to understand expected user behavior and flows)
 
 # Raphael — User Guide
 
-> Last updated: 2026-03-31
+> Last updated: 2026-04-06
 > Version: 0.1.0 (pre-release — updated as features are built)
 
 ---
@@ -37,6 +37,8 @@ Raphael has the following main sections:
 - **Gantt** — timeline view for a project's tasks with drag-to-reschedule
 - **Lean** — Last Planner System weekly work plan and PPC trend
 - **Lookahead** — rolling 3–6 week plan table for upcoming tasks
+- **Timesheets** — log and track work hours by project
+- **RFIs** — manage Requests for Information on your projects (design queries)
 - **Team** — user management (admin only)
 
 ---
@@ -76,9 +78,9 @@ A line chart showing Percent Plan Complete (PPC) history over the last 12 closed
 
 Empty state displays "No PPC data yet" if no weeks have been closed.
 
-#### Raphael's Briefing Panel
+#### Raphael's Briefing Panel (AI Advisor)
 
-Displays "AI Advisor Coming Soon" — the briefing panel will show daily priorities once the advisor API is online.
+The Raphael briefing panel displays AI-generated insights about your projects. See the dedicated **Raphael AI Advisor** section below for full documentation.
 
 ---
 
@@ -354,6 +356,281 @@ Click a task row to open its full detail panel. Use the lookahead to:
 - Plan resource allocation and sequencing
 
 **Empty state**: If no tasks are due in the next weeks, "No tasks in lookahead" is displayed.
+
+---
+
+### Timesheets
+
+Log and track your work hours across projects. The Timesheets feature lets you record how many hours you spent on each project each day, with optional work-type classification (e.g., Modelling, Coordination) and free-text notes.
+
+#### How to Navigate to Timesheets
+
+1. From the main sidebar or navigation menu, click **Timesheets**
+2. The Entries tab opens by default — this is your daily timesheet
+
+#### Four Views: Entries, Weekly, Monthly, Yearly
+
+The timesheet has four tabs:
+
+**Entries** — All individual time log records you've created. Add, edit, or delete entries here. An "Export PDF" button lets you download a report of the current view.
+
+**Weekly** — A summary of hours logged each week, grouped by project. Navigate years with the arrow buttons.
+
+**Monthly** — A summary of hours logged each month, grouped by project. Navigate years with the arrow buttons.
+
+**Yearly** — All-time hours totals by year and project. Shows your career total hours logged in the system.
+
+#### Logging a Timesheet Entry
+
+1. Stay on the **Entries** tab
+2. Click **Add Entry** in the top-right corner
+3. A form appears with fields:
+   - **Project** (required) — select which project you worked on
+   - **Date** (required) — select the date you worked
+   - **Hours** (required) — enter how many hours (0.25 to 24 in quarter-hour increments, e.g., 4.5)
+   - **Work Type** (optional) — select a category like "Modelling", "Meeting & Preparation", or "QA Checking" from a grouped dropdown
+   - **Description** (optional) — free text, e.g. "Coordination meeting with BIM team"
+4. Click **Add entry**
+
+**What to expect**: The entry saves and the form closes. The new entry appears in the table below. The total hours for the current view updates.
+
+#### Updating or Deleting an Entry
+
+1. Find the entry in the Entries table
+2. Click the **pencil icon** to edit, or the **trash icon** to delete
+3. For edits: the form opens with the existing values. Change what you need and click **Save changes**. You cannot change the project — if you logged time to the wrong project, delete the entry and create a new one.
+4. For deletes: a confirmation happens, then the entry is permanently removed
+
+**Upsert behaviour**: If you log time for the same project and date twice, the second entry overwrites the first. You can have only one entry per project per day.
+
+#### Exporting a PDF Report
+
+1. Go to the **Entries** tab
+2. Optionally filter by project using the dropdown
+3. Click **Export PDF** in the top-right corner
+4. Your browser downloads a PDF report of the visible entries and total hours
+
+The PDF includes your own timesheet entries and the date range of the filtered results. Admin and manager users can export all team members' timesheets when they view the report settings.
+
+#### Common Issues
+
+**"Entry won't save" — Hours error**
+Hours must be greater than 0 and no more than 24 per day. Use 0.25 increments (e.g., 0.5, 1.25, 4.5). Check the validation message and correct the hours value.
+
+**"No projects shown in the dropdown"**
+You must be a member of at least one project. Ask your project manager or admin to add you to a project. Once added, the project list will refresh.
+
+---
+
+### RFI Manager (Request for Information)
+
+RFIs (Requests for Information) are formal queries raised during design or construction when information is missing or unclear. Raphael's RFI Manager lets you create, track, respond to, and manage RFI lifecycle within a project.
+
+#### How to Access RFIs
+
+1. Open a project from the Projects page
+2. Click the **RFI** tab in the project navigation
+
+RFIs are project-specific — each project has its own RFI list.
+
+#### The RFI Dashboard and List Views
+
+The RFI section has two tabs:
+
+**Dashboard** — A high-level summary: total RFI count, open/overdue counts, average response time, and an SLA compliance percentage. Offers a quick status snapshot and "Export Summary PDF" button for reporting.
+
+**RFI List** — All RFIs for the project in a filterable sidebar with an optional detail panel. Click an RFI to view or edit it.
+
+#### Filtering RFIs
+
+On the RFI List tab, use the filter bar at the top:
+
+1. **Status** dropdown — show only RFIs with a specific status: Open, Under Review, Responded, or Closed
+2. **Discipline** dropdown — filter by engineering discipline (e.g., Electrical, Plumbing, Structural)
+3. **Priority** dropdown — show only Low, Medium, High, or Urgent RFIs
+
+Multiple filters can be applied together. Click **Clear** to reset all filters.
+
+#### Creating a New RFI
+
+1. On the RFI List tab, click **+ New RFI** at the top
+2. A form appears with required and optional fields:
+   - **Title** (required) — brief subject of the query
+   - **Discipline** (required) — select from Mechanical, Electrical, Plumbing, Fire Protection, Civil / Structural, Architectural, or General
+   - **Submitted By** (required) — name of the person or firm submitting the RFI
+   - **Description** (required) — detailed question or scope of the inquiry
+   - **Priority** (optional) — Low, Medium (default), High, or Urgent
+   - **Assigned To** (optional) — person responsible for responding
+   - **Drawing Ref** (optional) — drawing number or document reference
+   - **Spec Section** (optional) — specification section reference
+   - **Required Date** (optional) — by when you need the response
+3. Click **Create RFI**
+
+**What to expect**: The RFI is created and assigned an auto-generated number like "RFI-2026-001". The number format is `RFI-{year}-{NNN}` and resets each calendar year. The RFI appears in the list and opens in the detail panel.
+
+#### Viewing and Editing an RFI
+
+1. Click an RFI in the list to open its detail panel
+2. The panel shows:
+   - RFI number, title, status badge (Open / Under Review / Responded / Closed)
+   - Discipline and priority badges with due date and SLA status
+   - Meta information: submitted by, assigned to, drawing/spec references, dates
+   - The original question/description
+   - An "Official Response" text area for the answer
+   - Comments section for team discussion
+   - Attachments (images) for the RFI
+   - Activity log showing all status changes and updates
+
+#### Changing RFI Status
+
+The status workflow is **Open → Under Review → Responded → Closed**.
+
+1. In the detail panel header, find the **Status** dropdown
+2. Select a new status
+3. Click to confirm — the status updates immediately
+
+**Auto-setting response date**: When you transition to "Responded", the response date is automatically set to today (if not already set). You can edit it manually before saving.
+
+#### Adding an Official Response
+
+1. Scroll to the "Official Response" section in the detail panel
+2. Type or paste the response text in the textarea
+3. Add any attachments (see below)
+4. Click the **Save** button (green button in the header)
+
+#### Attaching Images to an RFI
+
+You can attach up to 6 images per RFI. Images can be:
+- Attached to the RFI itself (always visible in the Attachments section)
+- Attached to individual comments (associated with that comment only)
+
+**To attach images to the RFI:**
+1. In the "Attachments" section, click **Add / Paste** button (dashed box)
+2. Either click to select files from your computer, or **paste a screenshot** directly (Ctrl+V)
+3. Images appear as thumbnails below — you can remove them by clicking the X on hover
+4. When you have pending images, a yellow warning says "N images pending — click Save to upload"
+5. Click the **Save** button at the top to upload all pending images
+
+**To attach images to a comment:**
+1. Scroll to the Comments section
+2. Type your comment text (or leave blank if attaching images only)
+3. Click the **Attach image** link below the comment box
+4. Select one or more image files
+5. Images appear as thumbnails — click the X to remove any
+6. Click **Post** to submit the comment with images
+
+**Viewing images**: Click an image thumbnail to zoom in and view full-size in a lightbox. Click the X or outside the image to close.
+
+#### Adding Comments
+
+1. Scroll to the "Comments" section in the detail panel
+2. Type your message in the "Add a comment" field
+3. Optionally attach images (see above)
+4. Click **Post** or press Ctrl+Enter to submit
+
+**What to expect**: Your comment appears immediately in the comment list with your initials, a timestamp (e.g., "2 hours ago"), and any attached images. Comments are ordered oldest first.
+
+#### Exporting RFI Reports
+
+Two export options are available:
+
+**Export Summary PDF** (on the RFI List tab header) — generates a PDF report of all RFIs and SLA statistics for the entire project. Click the button and your browser downloads the file.
+
+**Export PDF** (in the RFI detail header) — exports the single RFI being viewed as a detailed PDF, including all metadata, description, response, comments, and images.
+
+#### Understanding RFI Status and SLA
+
+Each RFI can be in one of four statuses:
+- **Open** — newly created, awaiting review
+- **Under Review** — someone is working on the response
+- **Responded** — a response has been provided (response date is set)
+- **Closed** — the RFI is complete and no further action needed
+
+SLA (Service Level Agreement) tracking:
+- If an RFI has a "Required Date", Raphael calculates whether the response was provided by that date
+- The status badge shows **On Track** (responded by the due date) or **Overdue** (not yet responded, past the due date)
+- The Dashboard tab shows an SLA compliance percentage: % of RFIs responded on or before the required date
+
+#### Common Issues
+
+**"Can't transition to Responded" or "Required date shows as missing"**
+If the RFI has a required date, Raphael will auto-set the response date when you change status to "Responded". If you need to set a specific response date, edit the response and click Save before changing status.
+
+**"Image won't upload"**
+Check that the file is an image (jpg, png, gif, webp, etc.). Maximum 10 MB per file. The RFI can have at most 6 images — if you're at the limit, delete an existing image first.
+
+---
+
+### Raphael AI Advisor
+
+Raphael — the Great Sage — analyzes your active projects and intelligently surfaces what matters most today. The AI Advisor appears on the Dashboard as a briefing panel and lets you ask natural language questions about project status.
+
+#### The Raphael Briefing Panel
+
+The briefing panel is a card on the main Dashboard. It displays:
+
+**Live indicator** — A green pulsing dot labeled "Live" shows the briefing is fresh. A timestamp below ("Updated 5m ago") shows when the briefing was last generated.
+
+**Alerts** — Highlighted issue chips for urgent items: overdue tasks, blocked tasks, and tasks due today. Each alert is tagged with a red, orange, or yellow badge and icon.
+
+**Priorities** — A ranked list (1, 2, 3, ...) of the most important things to focus on today. Each item shows:
+- A priority level badge (Critical, High, Normal)
+- A summary sentence of what needs attention
+- Optional detail text providing context
+- Task title and project name (as gray chips) for quick reference
+
+**Recommendations** — Numbered suggestions (1, 2, 3) for actions to take based on current project state. These are AI-generated and contextual to your workload.
+
+**Empty state**: If you have no urgent issues, the panel displays "No active issues — projects are on track" with a green checkmark.
+
+#### Loading and Error States
+
+**Loading state** — When the briefing is being generated, skeleton rows animate in the priorities section.
+
+**Error state** — If the AI provider is unavailable (API offline or credentials expired), an alert appears with the message "Advisor unavailable". A **Retry** button allows you to re-fetch the briefing.
+
+#### Asking Raphael a Question
+
+1. At the bottom of the briefing panel, find the **Ask Raphael** input field
+2. Type a natural language question about your projects, e.g., "Which tasks are overdue?", "What's the status of Project X?", or "Who is overloaded this week?"
+3. Press **Enter** or click the **Send** button (paper plane icon)
+4. Raphael responds with an answer based on current project data
+
+**What to expect**: A brief loading spinner appears while the AI generates a response. Once ready, the answer appears in a collapsible block below the input, labeled "Raphael's answer".
+
+**Dismissing an answer**: Click the X button in the answer header, or the collapse arrow to hide the answer text. You can ask another question anytime.
+
+#### How Raphael Works
+
+Raphael has access to:
+- All your active projects (status, members, task counts)
+- All project tasks (title, status, due date, assignee, priority)
+- Weekly work plans and PPC history (planning reliability)
+- Blocked and overdue task relationships
+- Team member workload (open tasks per person)
+
+Raphael **cannot** access:
+- Comments or notes on tasks
+- Attachments or files
+- Personal information beyond display names and roles
+- Archived or cancelled projects
+
+#### Auto-Refresh Behavior
+
+The briefing automatically refreshes once per hour. If you want an immediate fresh analysis:
+1. Click the **Retry** button (if there's an error), or
+2. Manually refresh the page (Ctrl+R)
+
+#### Common Issues
+
+**"Briefing shows an error — 'Advisor unavailable'"**
+The AI provider API may be offline, or the API key is expired. Contact your system admin to check the AI provider status. Click **Retry** to try again.
+
+**"Answer seems outdated"**
+The briefing uses a snapshot of your project data from the last refresh (up to 1 hour old). Force a refresh by reloading the page (Ctrl+R) or clicking the Retry button to get fresh data.
+
+**"Can the AI see my private notes?"**
+No. Raphael only analyzes system data: task titles, statuses, due dates, and assignments. Comments, descriptions, and attachments are not visible to the AI.
 
 ---
 
