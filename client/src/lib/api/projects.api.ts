@@ -24,6 +24,7 @@ export interface CreateProjectInput {
   status?: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
   startDate?: string | null;
   endDate?: string | null;
+  coverImageUrl?: string | null;
 }
 
 export interface UpdateProjectInput {
@@ -33,6 +34,7 @@ export interface UpdateProjectInput {
   status?: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
   startDate?: string | null;
   endDate?: string | null;
+  coverImageUrl?: string | null;
 }
 
 export type ProjectWithCounts = Project & { memberCount: number; taskCount: number };

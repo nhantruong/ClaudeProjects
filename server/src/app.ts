@@ -10,12 +10,13 @@
  *   → routes → notFound → errorHandler
  */
 
+import { join } from 'path';
+import { existsSync } from 'fs';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
 
 import { env } from './lib/env.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
@@ -28,6 +29,10 @@ import tasksRouter from './routes/tasks.routes.js';
 import dashboardRouter from './routes/dashboard.routes.js';
 import advisorRouter from './routes/advisor.routes.js';
 import leanRouter from './routes/lean.routes.js';
+import { projectRfiRouter, rfiRouter } from './routes/rfi.routes.js';
+import timesheetRouter from './routes/timesheet.routes.js';
+import lookupRouter from './routes/lookup.routes.js';
+import { reportsRouter, projectReportsRouter, rfiReportRouter } from './routes/reports.routes.js';
 
 export function createApp(): express.Application {
   const app = express();
@@ -66,24 +71,6 @@ export function createApp(): express.Application {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
 
-  // ── Global rate limiting ─────────────────────────────────────────────────
-  // 100 requests per 15 minutes per IP. Stricter limits are applied per-route
-  // on auth endpoints (login, password change) in their respective routers.
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100,
-      standardHeaders: true,
-      legacyHeaders: false,
-      message: {
-        error: {
-          code: 'RATE_LIMITED',
-          message: 'Too many requests — please try again later',
-        },
-      },
-    }),
-  );
-
   // ── Health check ─────────────────────────────────────────────────────────
   // Public endpoint — no authentication required.
   // Used by load balancers, uptime monitors, and CI smoke tests.
@@ -104,6 +91,36 @@ export function createApp(): express.Application {
   app.use(`${prefix}/projects/:projectId`, leanRouter);
   app.use(`${prefix}/dashboard`, dashboardRouter);
   app.use(`${prefix}/advisor`, advisorRouter);
+  // RFI — collection endpoints nested under projects; resource endpoints at /rfis
+  app.use(`${prefix}/projects/:projectId/rfis`, projectRfiRouter);
+  app.use(`${prefix}/rfis`, rfiRouter);
+  app.use(`${prefix}/timesheets`, timesheetRouter);
+  app.use(`${prefix}/lookups`, lookupRouter);
+  // PDF report endpoints
+  app.use(`${prefix}/reports`, reportsRouter);
+  app.use(`${prefix}/projects/:projectId`, projectReportsRouter);
+  app.use(`${prefix}/rfis`, rfiReportRouter);
+
+  // ── Static uploads ───────────────────────────────────────────────────────
+  // Serves user-uploaded files (RFI images, etc.) from /uploads/.
+  // The uploads directory lives at the project root, one level above server/.
+  // __dirname resolves to server/dist/src in production, so ../../../ reaches root.
+  const uploadsServePath = join(__dirname, '../../../uploads');
+  app.use('/uploads', express.static(uploadsServePath));
+
+  // ── Static files + SPA fallback ──────────────────────────────────────────
+  // When co-hosted with the API (production on iisnode), serve the React build
+  // from two levels up (site root). Skipped in local dev where Vite serves the
+  // frontend on a separate port.
+  const clientDistPath = join(__dirname, '../../');
+  const clientIndexPath = join(clientDistPath, 'index.html');
+  if (existsSync(clientIndexPath)) {
+    app.use(express.static(clientDistPath));
+    // SPA fallback — all non-API routes return index.html for client-side routing
+    app.get(/^(?!\/api\/|\/health).*/, (_req, res) => {
+      res.sendFile(clientIndexPath);
+    });
+  }
 
   // ── Error handling ───────────────────────────────────────────────────────
   // These must be last — Express identifies error handlers by arity (4 args).

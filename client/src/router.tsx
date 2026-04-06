@@ -35,6 +35,12 @@ const GanttPage = lazy(() =>
 const LeanPage = lazy(() =>
   import('@/pages/LeanPage').then((m) => ({ default: m.LeanPage }))
 );
+const RfiPage = lazy(() =>
+  import('@/pages/RfiPage').then((m) => ({ default: m.RfiPage }))
+);
+const TimesheetPage = lazy(() =>
+  import('@/pages/TimesheetPage').then((m) => ({ default: m.TimesheetPage }))
+);
 
 // ── Loading fallback ──────────────────────────────────────────────────────────
 
@@ -192,6 +198,30 @@ const leanRoute = createRoute({
   ),
 });
 
+// RFI Manager
+const rfiRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/projects/$projectId/rfis',
+  beforeLoad: requireAuth,
+  component: () => (
+    <Protected>
+      <RfiPage />
+    </Protected>
+  ),
+});
+
+// Timesheet
+const timesheetRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/timesheet',
+  beforeLoad: requireAuth,
+  component: () => (
+    <Protected>
+      <TimesheetPage />
+    </Protected>
+  ),
+});
+
 // Catch-all redirect to dashboard
 const indexRedirectRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -210,6 +240,8 @@ const routeTree = rootRoute.addChildren([
   kanbanRoute,
   ganttRoute,
   leanRoute,
+  rfiRoute,
+  timesheetRoute,
   teamRoute,
   settingsRoute,
   indexRedirectRoute,

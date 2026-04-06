@@ -38,6 +38,7 @@ export async function getDashboard(
       },
       workload: summary.workload,
       ppcTrend: summary.ppcTrend,
+      rfiStats: summary.rfiStats,
     });
   } catch (err) {
     next(err);

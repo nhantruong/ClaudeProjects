@@ -12,7 +12,7 @@ Read by: @frontend-developer (to know what endpoints to call and their contracts
 > **Base URL**: `http://103.27.60.66/api/v1` (production) · `http://localhost:3001/api/v1` (local)
 > **Authentication**: JWT stored in an `httpOnly`, `SameSite=Strict` cookie named `token` (set on login). Also accepted via `Authorization: Bearer <token>` header for API clients. See ADR-002.
 > **Content-Type**: `application/json` for all requests and responses
-> **Last updated**: 2026-03-30
+> **Last updated**: 2026-04-04 (lookup endpoint added)
 
 ---
 
@@ -1291,6 +1291,393 @@ Notes:
 
 ---
 
+### RFI (Request for Information)
+
+#### GET /projects/:projectId/rfis
+
+**Auth required**: Yes — project members only
+**Description**: Returns all RFIs for a project ordered by date submitted (newest first). Supports optional query-string filters.
+
+**Query parameters** (all optional):
+- `status` — filter by RFI status: `Open | Under Review | Responded | Closed`
+- `discipline` — filter by discipline: `Mechanical | Electrical | Plumbing | Fire Protection | Civil / Structural | Architectural | General`
+- `priority` — filter by priority: `Low | Medium | High | Urgent`
+
+**Response 200**:
+```json
+{
+  "rfis": [
+    {
+      "id": "number",
+      "projectId": "number",
+      "rfiNumber": "string — e.g. RFI-2026-001",
+      "title": "string",
+      "discipline": "string",
+      "priority": "string",
+      "status": "string",
+      "submittedBy": "string",
+      "assignedTo": "string | null",
+      "drawingRef": "string | null",
+      "specRef": "string | null",
+      "dateSubmitted": "string — YYYY-MM-DD",
+      "requiredDate": "string | null — YYYY-MM-DD",
+      "responseDate": "string | null — YYYY-MM-DD",
+      "description": "string",
+      "response": "string | null",
+      "createdBy": "number",
+      "createdAt": "string — ISO 8601",
+      "updatedAt": "string — ISO 8601",
+      "commentCount": "number"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+
+---
+
+#### POST /projects/:projectId/rfis
+
+**Auth required**: Yes — project members only
+**Description**: Creates a new RFI in the project. RFI number is auto-generated in format `RFI-{year}-{NNN}`. Status is always set to `Open` on creation.
+
+**Request body**:
+```json
+{
+  "title": "string — min 1, max 300 chars (required)",
+  "discipline": "string — Mechanical | Electrical | Plumbing | Fire Protection | Civil / Structural | Architectural | General (required)",
+  "priority": "string — Low | Medium | High | Urgent (default: Medium)",
+  "submittedBy": "string — name of the submitting party, min 1, max 200 chars (required)",
+  "assignedTo": "string | null — optional, max 200 chars",
+  "drawingRef": "string | null — optional, max 200 chars",
+  "specRef": "string | null — optional, max 100 chars",
+  "dateSubmitted": "string — YYYY-MM-DD, optional (defaults to today)",
+  "requiredDate": "string | null — YYYY-MM-DD, optional",
+  "description": "string — min 1 char (required)"
+}
+```
+
+**Response 201**:
+```json
+{
+  "rfi": {
+    "id": "number",
+    "projectId": "number",
+    "rfiNumber": "string",
+    "title": "string",
+    "discipline": "string",
+    "priority": "string",
+    "status": "string",
+    "submittedBy": "string",
+    "assignedTo": "string | null",
+    "drawingRef": "string | null",
+    "specRef": "string | null",
+    "dateSubmitted": "string — YYYY-MM-DD",
+    "requiredDate": "string | null",
+    "responseDate": "string | null",
+    "description": "string",
+    "response": "string | null",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `422` — Validation error (missing or invalid fields)
+
+---
+
+#### GET /projects/:projectId/rfis/stats
+
+**Auth required**: Yes — project members only
+**Description**: Returns RFI count and SLA summary statistics for a project.
+
+**Response 200**:
+```json
+{
+  "stats": {
+    "total": "number",
+    "open": "number",
+    "underReview": "number",
+    "responded": "number",
+    "closed": "number",
+    "overdue": "number — open/under-review RFIs past their required date",
+    "avgResponseDays": "number | null — average calendar days from submission to response",
+    "slaCompliant": "number — responded on or before required date",
+    "slaTotal": "number — total responded RFIs (denominator for SLA %)"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+
+---
+
+#### GET /rfis/:id
+
+**Auth required**: Yes — project members only
+**Description**: Returns full RFI detail including comments, activity log, and images.
+
+**Response 200**:
+```json
+{
+  "rfi": {
+    "id": "number",
+    "projectId": "number",
+    "rfiNumber": "string",
+    "title": "string",
+    "discipline": "string",
+    "priority": "string",
+    "status": "string",
+    "submittedBy": "string",
+    "assignedTo": "string | null",
+    "drawingRef": "string | null",
+    "specRef": "string | null",
+    "dateSubmitted": "string — YYYY-MM-DD",
+    "requiredDate": "string | null",
+    "responseDate": "string | null",
+    "description": "string",
+    "response": "string | null",
+    "createdBy": "number",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601",
+    "comments": [
+      {
+        "id": "number",
+        "rfiId": "number",
+        "userId": "number",
+        "authorName": "string",
+        "body": "string",
+        "createdAt": "string — ISO 8601",
+        "updatedAt": "string — ISO 8601"
+      }
+    ],
+    "activity": [
+      {
+        "id": "number",
+        "rfiId": "number",
+        "userId": "number | null",
+        "event": "string",
+        "createdAt": "string — ISO 8601"
+      }
+    ],
+    "images": [
+      {
+        "id": "number",
+        "rfiId": "number",
+        "commentId": "number | null",
+        "filename": "string",
+        "storagePath": "string — relative URL path e.g. /uploads/rfi/filename.jpg",
+        "mimeType": "string | null",
+        "fileSize": "number | null — bytes",
+        "sortOrder": "number",
+        "uploadedBy": "number",
+        "createdAt": "string — ISO 8601"
+      }
+    ]
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — RFI not found
+
+---
+
+#### PATCH /rfis/:id
+
+**Auth required**: Yes — project members only
+**Description**: Applies partial updates to an RFI. When `status` transitions to `Responded`, `responseDate` is auto-set to today if not provided. At least one field is required.
+
+**Request body** (all fields optional — at least one required):
+```json
+{
+  "title": "string — min 1, max 300 chars",
+  "discipline": "string — allowed values as above",
+  "priority": "string — Low | Medium | High | Urgent",
+  "status": "string — Open | Under Review | Responded | Closed",
+  "submittedBy": "string — min 1, max 200 chars",
+  "assignedTo": "string | null",
+  "drawingRef": "string | null",
+  "specRef": "string | null",
+  "requiredDate": "string | null — YYYY-MM-DD",
+  "responseDate": "string | null — YYYY-MM-DD",
+  "description": "string — min 1 char",
+  "response": "string | null"
+}
+```
+
+**Response 200**:
+```json
+{
+  "rfi": { "...same shape as POST /rfis response..." }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — RFI not found
+- `422` — Validation error (no fields provided, or invalid values)
+
+---
+
+#### DELETE /rfis/:id
+
+**Auth required**: Yes — project members only
+**Description**: Permanently deletes an RFI. Cascades to all comments, activity records, and images at the database level. Physical image files are not removed by this operation.
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — RFI not found
+
+---
+
+#### POST /rfis/:id/comments
+
+**Auth required**: Yes — project members only
+**Description**: Adds a comment to an RFI. The authenticated user is recorded as author.
+
+**Request body**:
+```json
+{
+  "body": "string — min 1 char (required)"
+}
+```
+
+**Response 201**:
+```json
+{
+  "comment": {
+    "id": "number",
+    "rfiId": "number",
+    "userId": "number",
+    "authorName": "string",
+    "body": "string",
+    "createdAt": "string — ISO 8601",
+    "updatedAt": "string — ISO 8601"
+  }
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — RFI not found
+- `422` — Validation error (empty body)
+
+---
+
+#### DELETE /rfis/:id/comments/:commentId
+
+**Auth required**: Yes — project members only
+**Description**: Removes a comment from an RFI.
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — RFI not found
+
+---
+
+#### POST /rfis/:id/images
+
+**Auth required**: Yes — project members only
+**Description**: Uploads one or more image files to an RFI. Accepts `multipart/form-data`. Maximum 6 images per RFI (images associated with a comment do not count against this limit). Maximum 10 MB per file. Only `image/*` MIME types are accepted.
+
+**Content-Type**: `multipart/form-data`
+
+**Form fields**:
+- `images` — one or more image files (field name must be `images`)
+- `commentId` — optional integer; associates the image with a specific comment rather than the RFI directly
+
+**Response 201**:
+```json
+{
+  "images": [
+    {
+      "id": "number",
+      "rfiId": "number",
+      "commentId": "number | null",
+      "filename": "string — server-generated filename",
+      "storagePath": "string — URL path e.g. /uploads/rfi/filename.jpg",
+      "mimeType": "string | null",
+      "fileSize": "number | null — bytes",
+      "sortOrder": "number",
+      "uploadedBy": "number",
+      "createdAt": "string — ISO 8601"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — RFI not found
+- `422` — No files provided, non-image file type, or RFI already has 6 images
+
+---
+
+#### DELETE /rfis/:id/images/:imageId
+
+**Auth required**: Yes — project members only
+**Description**: Removes an image record from the database and deletes the physical file from disk.
+
+**Response 204**: No content
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — RFI not found, or image not found
+
+---
+
+### Lookups
+
+#### GET /lookups/work-types
+
+**Auth required**: Yes
+**Description**: Returns all active work types joined with their group name and group id, ordered by group display order then work type name alphabetically. Used to populate work-type dropdowns in the timesheet form.
+
+**Request body**: None
+
+**Response 200**:
+```json
+{
+  "workTypes": [
+    {
+      "id": "number — work type primary key",
+      "name": "string — work type name",
+      "groupId": "number — ref_work_type_groups.id",
+      "groupName": "string — group name (e.g. Modelling, Meeting & Preparation)",
+      "isActive": "boolean — always true (inactive types are excluded)"
+    }
+  ]
+}
+```
+
+**Error codes**:
+- `401` — Not authenticated
+
+---
+
 ### Raphael AI Advisor
 
 #### GET /advisor/briefing
@@ -1301,10 +1688,68 @@ Ask the AI advisor a natural language question about project status. *(FR-083)*
 
 ---
 
+### Reports (PDF)
+
+All report endpoints return `application/pdf` with a `Content-Disposition: attachment` header. The PDF is streamed directly — no JSON body.
+
+#### GET /reports/timesheet
+
+**Auth required**: Yes
+**Description**: Generates a timesheet PDF report. Admin and Manager users can pass an optional `userId` to export any user's data; Member users are always restricted to their own data.
+
+**Query parameters** (all optional):
+- `from` — start date filter: `YYYY-MM-DD`
+- `to` — end date filter: `YYYY-MM-DD`
+- `userId` — filter to a specific user (admin/manager only; ignored for members)
+- `projectId` — filter to a specific project
+
+**Response 200**: `application/pdf` — landscape A4. Columns: #, Date, Member, Project, Work Type, Hours, Description. Footer shows total hours and entry count.
+
+**Error codes**:
+- `401` — Not authenticated
+
+---
+
+#### GET /projects/:projectId/reports/rfi
+
+**Auth required**: Yes — project members only
+**Description**: Generates an RFI summary PDF for the specified project. All RFIs for the project are included. Header shows aggregate counts (total, open, under review, responded, closed, overdue).
+
+**Request body**: None
+
+**Response 200**: `application/pdf` — landscape A4. Columns: #, RFI #, Priority, Status, Discipline, Date Submitted, Required Date, Response Date, Title, Submitted By, Assigned To.
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — Project not found
+
+---
+
+#### GET /rfis/:id/report
+
+**Auth required**: Yes — project members only
+**Description**: Generates a detailed single-RFI PDF including all metadata fields, description, response, embedded images (from disk), and comments.
+
+**Request body**: None
+
+**Response 200**: `application/pdf` — portrait A4. Sections: info block (10 metadata fields), description, response, images (up to 3 per row), comments.
+
+**Error codes**:
+- `401` — Not authenticated
+- `403` — Not a member of this project
+- `404` — RFI not found
+
+---
+
 ## Changelog
 
 | Date | Change |
 |------|--------|
+| 2026-04-06 | PDF report endpoints implemented — GET /reports/timesheet, GET /projects/:projectId/reports/rfi, GET /rfis/:id/report |
+| 2026-04-04 | Lookup endpoints implemented — GET /lookups/work-types |
+| 2026-04-04 | RFI image upload endpoints implemented — POST/DELETE /rfis/:id/images; GET /rfis/:id now includes images array |
+| 2026-04-04 | RFI endpoints documented — GET/POST /projects/:projectId/rfis, GET /projects/:projectId/rfis/stats, GET/PATCH/DELETE /rfis/:id, POST/DELETE /rfis/:id/comments |
 | 2026-03-30 | Dashboard endpoint implemented — GET /dashboard (projects, stats, workload, ppcTrend) |
 | 2026-03-30 | Tasks endpoints implemented — GET/POST /projects/:projectId/tasks, GET/PATCH/DELETE /tasks/:id, POST/PATCH/DELETE /tasks/:id/subtasks/:subtaskId, POST /tasks/:id/comments, POST/DELETE /tasks/:id/dependencies, POST /tasks/:id/attachments (501 stub) |
 | 2026-03-30 | Projects endpoints implemented — GET/POST /projects, GET/PATCH/DELETE /projects/:id, POST/DELETE/GET /projects/:id/members |

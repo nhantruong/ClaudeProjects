@@ -53,6 +53,7 @@ const UpdateProjectSchema = z.object({
   }).optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'startDate must be a date in YYYY-MM-DD format').nullable().optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'endDate must be a date in YYYY-MM-DD format').nullable().optional(),
+  coverImageUrl: z.string().max(500).nullable().optional(),
 });
 
 const AddMemberSchema = z.object({

@@ -18,8 +18,8 @@ import * as leanService from '../services/lean.service.js';
 // ---------------------------------------------------------------------------
 
 /** Parse a numeric route param — returns NaN if the value is not a valid int. */
-function parseId(value: string | undefined): number {
-  return parseInt(value ?? '', 10);
+function parseId(value: string | string[] | undefined): number {
+  return parseInt(Array.isArray(value) ? value[0] ?? '' : (value ?? ''), 10);
 }
 
 // ---------------------------------------------------------------------------
@@ -114,7 +114,11 @@ export async function addWwpTask(
       req.user!.userId,
       projectId,
       weekId,
-      { description, assigneeId, taskId },
+      {
+        description,
+        ...(assigneeId !== undefined ? { assigneeId } : {}),
+        ...(taskId !== undefined ? { taskId } : {}),
+      },
     );
 
     res.status(201).json({ wwpTask });
@@ -147,7 +151,10 @@ export async function updateWwpTask(
       projectId,
       weekId,
       wwpTaskId,
-      { isComplete, varianceReason },
+      {
+        ...(isComplete !== undefined ? { isComplete } : {}),
+        ...(varianceReason !== undefined ? { varianceReason } : {}),
+      },
     );
 
     res.status(200).json({ wwpTask });

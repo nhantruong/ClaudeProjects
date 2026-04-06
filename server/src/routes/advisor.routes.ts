@@ -1,20 +1,25 @@
 /**
- * advisor.routes.ts — Raphael AI Advisor route stubs.
+ * advisor.routes.ts — Raphael AI Advisor routes.
  *
- * Endpoints (to be implemented in task #018):
- *   GET  /api/v1/advisor/briefing — AI-generated daily briefing:
- *                                   top priorities, conflicts, recommendations (FR-081, FR-082, FR-084)
- *   POST /api/v1/advisor/ask      — natural language question about project status (FR-083)
+ *   GET  /api/v1/advisor/briefing — AI-generated daily briefing (FR-081, FR-082, FR-084)
+ *   POST /api/v1/advisor/ask     — natural language question about project status (FR-083)
  *
  * AI calls are server-side only (ADR-003).
- * AI_PROVIDER env var controls whether Anthropic or Ollama is used.
  */
 
 import { Router } from 'express';
+import { z } from 'zod';
+import { authenticate } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import * as advisorController from '../controllers/advisor.controller.js';
+
+const AskSchema = z.object({
+  question: z.string().min(1, 'Question is required').max(500),
+});
 
 const router = Router();
 
-// TODO (task #018): implement GET /advisor/briefing
-// TODO (task #018): implement POST /advisor/ask
+router.get('/briefing', authenticate, advisorController.getBriefing);
+router.post('/ask', authenticate, validate(AskSchema), advisorController.askAdvisor);
 
 export default router;

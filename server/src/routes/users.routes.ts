@@ -24,6 +24,7 @@ import {
   createUser,
   updateUser,
   getMe,
+  getUserProjects,
 } from '../controllers/user.controller.js';
 
 const router = Router();
@@ -69,5 +70,8 @@ router.post('/', authenticate, requireAdmin, validate(CreateUserSchema), createU
 
 /** PATCH /api/v1/users/:id — update a user account. Admin only. */
 router.patch('/:id', authenticate, requireAdmin, validate(UpdateUserSchema), updateUser);
+
+/** GET /api/v1/users/:userId/projects — admin/manager: list projects for a user */
+router.get('/:userId/projects', authenticate, requireAdmin, getUserProjects);
 
 export default router;

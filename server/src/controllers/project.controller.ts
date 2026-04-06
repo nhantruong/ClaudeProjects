@@ -18,8 +18,8 @@ import * as projectService from '../services/project.service.js';
 // ---------------------------------------------------------------------------
 
 /** Parse a numeric route param — returns NaN if the value is not a valid int. */
-function parseId(value: string | undefined): number {
-  return parseInt(value ?? '', 10);
+function parseId(value: string | string[] | undefined): number {
+  return parseInt(Array.isArray(value) ? value[0] ?? '' : (value ?? ''), 10);
 }
 
 // ---------------------------------------------------------------------------
@@ -69,11 +69,11 @@ export async function createProject(
     const project = await projectService.createProject(
       {
         name,
-        description,
+        ...(description !== undefined ? { description } : {}),
         domain: domain as projectService.ProjectDomain,
-        status: status as projectService.ProjectStatus | undefined,
-        startDate,
-        endDate,
+        ...(status !== undefined ? { status: status as projectService.ProjectStatus } : {}),
+        ...(startDate !== undefined ? { startDate } : {}),
+        ...(endDate !== undefined ? { endDate } : {}),
       },
       req.user!.userId,
     );
@@ -117,24 +117,26 @@ export async function updateProject(
 ): Promise<void> {
   try {
     const projectId = parseId(req.params['id']);
-    const { name, description, domain, status, startDate, endDate } = req.body as {
+    const { name, description, domain, status, startDate, endDate, coverImageUrl } = req.body as {
       name?: string;
       description?: string | null;
       domain?: string;
       status?: string;
       startDate?: string | null;
       endDate?: string | null;
+      coverImageUrl?: string | null;
     };
 
     const project = await projectService.updateProject(
       projectId,
       {
-        name,
-        description,
-        domain: domain as projectService.ProjectDomain | undefined,
-        status: status as projectService.ProjectStatus | undefined,
-        startDate,
-        endDate,
+        ...(name !== undefined ? { name } : {}),
+        ...('description' in req.body ? { description: description as string | null } : {}),
+        ...(domain !== undefined ? { domain: domain as projectService.ProjectDomain } : {}),
+        ...(status !== undefined ? { status: status as projectService.ProjectStatus } : {}),
+        ...('startDate' in req.body ? { startDate: startDate as string | null } : {}),
+        ...('endDate' in req.body ? { endDate: endDate as string | null } : {}),
+        ...('coverImageUrl' in req.body ? { coverImageUrl: coverImageUrl as string | null } : {}),
       },
       req.user!.userId,
     );

@@ -7,6 +7,7 @@ import { ProjectSummaryCard } from '@/features/dashboard/ProjectSummaryCard';
 import { WorkloadWidget } from '@/features/dashboard/WorkloadWidget';
 import { PpcTrendChart } from '@/features/dashboard/PpcTrendChart';
 import { RaphaelBriefingPanel } from '@/features/dashboard/RaphaelBriefingPanel';
+import { RfiSummaryWidget } from '@/features/dashboard/RfiSummaryWidget';
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ export function DashboardPage() {
     );
   }
 
-  const { projects, stats, workload, ppcTrend } = data;
+  const { projects, stats, workload, ppcTrend, rfiStats } = data;
 
   const visibleProjects = projects.filter(
     (p) => p.status === 'active' || p.status === 'planning'
@@ -111,6 +112,7 @@ export function DashboardPage() {
         {/* Right 1/3 — workload + advisor */}
         <div className="space-y-6">
           <WorkloadWidget workload={workload} />
+          <RfiSummaryWidget stats={rfiStats ?? { openCount: 0, pendingResponse: 0, overdueCount: 0 }} />
           <RaphaelBriefingPanel />
         </div>
       </div>

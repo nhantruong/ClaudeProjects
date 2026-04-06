@@ -18,7 +18,7 @@ import { resolve } from 'path';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().default(3001),
+  PORT: z.union([z.coerce.number(), z.string()]).default(3001),
 
   // Frontend origin — used for CORS allowlist
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
@@ -53,7 +53,9 @@ export type Env = z.infer<typeof envSchema>;
 
 function loadDotEnv(): void {
   try {
-    const envPath = resolve(process.cwd(), '.env');
+    // resolve relative to this compiled file (server/dist/lib/env.js -> server/.env)
+    // process.cwd() is unreliable under iisnode (may point to C:\Windows\System32)
+    const envPath = resolve(__dirname, '../../.env');
     const contents = readFileSync(envPath, 'utf-8');
     for (const line of contents.split('\n')) {
       const trimmed = line.trim();

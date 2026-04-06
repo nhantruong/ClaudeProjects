@@ -68,7 +68,7 @@ export async function findByUsername(username: string): Promise<User | null> {
     { username: { type: sql.NVarChar(100), value: username } },
   );
 
-  return rows.length > 0 ? rowToUser(rows[0]) : null;
+  return rows.length > 0 && rows[0] ? rowToUser(rows[0]) : null;
 }
 
 /**
@@ -85,7 +85,7 @@ export async function findById(id: number): Promise<User | null> {
     { id: { type: sql.Int, value: id } },
   );
 
-  return rows.length > 0 ? rowToUser(rows[0]) : null;
+  return rows.length > 0 && rows[0] ? rowToUser(rows[0]) : null;
 }
 
 /**
@@ -153,6 +153,9 @@ export async function createUser(data: {
     },
   );
 
+  if (!rows[0]) {
+    throw new Error('createUser: INSERT did not return a row');
+  }
   const { passwordHash: _removed, ...safe } = rowToUser(rows[0]);
   return safe;
 }
@@ -190,6 +193,9 @@ export async function updateUser(
     },
   );
 
+  if (!rows[0]) {
+    throw new Error('updateUser: UPDATE did not return a row');
+  }
   const { passwordHash: _removed, ...safe } = rowToUser(rows[0]);
   return safe;
 }

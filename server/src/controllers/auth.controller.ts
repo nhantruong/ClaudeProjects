@@ -15,7 +15,7 @@
  *   maxAge: 30 days
  */
 
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import * as authService from '../services/auth.service.js';
 import { AuthRequest } from '../middleware/auth.js';
 
@@ -26,11 +26,16 @@ import { AuthRequest } from '../middleware/auth.js';
 const COOKIE_NAME = 'token';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-function cookieOptions(env: string) {
+function cookieOptions(req: Request) {
+  // Use secure flag only when the request itself arrived over HTTPS.
+  // Basing this on req.secure (or x-forwarded-proto) rather than NODE_ENV
+  // means the cookie works correctly on HTTP deployments while automatically
+  // upgrading to secure-only once a TLS certificate is installed.
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
   return {
     httpOnly: true,
     sameSite: 'strict' as const,
-    secure: env === 'production',
+    secure: isHttps,
     maxAge: THIRTY_DAYS_MS,
   };
 }
@@ -51,7 +56,7 @@ export async function login(req: AuthRequest, res: Response, next: NextFunction)
     const { username, password } = req.body as { username: string; password: string };
     const { token, user } = await authService.login(username, password);
 
-    res.cookie(COOKIE_NAME, token, cookieOptions(process.env['NODE_ENV'] ?? 'development'));
+    res.cookie(COOKIE_NAME, token, cookieOptions(req));
 
     res.status(200).json({ user });
   } catch (err) {
@@ -66,11 +71,12 @@ export async function login(req: AuthRequest, res: Response, next: NextFunction)
  * side invalidation — clearing the cookie is sufficient for standard clients.
  * Returns 204 No Content.
  */
-export function logout(_req: AuthRequest, res: Response): void {
+export function logout(req: AuthRequest, res: Response): void {
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
     sameSite: 'strict',
-    secure: process.env['NODE_ENV'] === 'production',
+    secure: isHttps,
   });
 
   res.status(204).send();

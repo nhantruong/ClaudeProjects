@@ -298,13 +298,13 @@ export function buildFallbackBriefing(ctx: AdvisorContext): BriefingResponse {
   }
 
   if (ctx.criticalTasks.length > 0 && priorities.length < 5) {
+    const firstCritical = ctx.criticalTasks[0];
     priorities.push({
       rank: rank++,
       level: 'critical',
       summary: `${ctx.criticalTasks.length} critical-priority task${ctx.criticalTasks.length > 1 ? 's' : ''} in progress`,
       detail: 'Review critical tasks and ensure they are unblocked and on track.',
-      taskTitle: ctx.criticalTasks[0].title,
-      projectName: ctx.criticalTasks[0].projectName,
+      ...(firstCritical ? { taskTitle: firstCritical.title, projectName: firstCritical.projectName } : {}),
     });
   }
 

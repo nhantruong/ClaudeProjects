@@ -352,19 +352,36 @@ export function ProjectMembersPanel({ projectId, members }: ProjectMembersPanelP
                 data-testid={`member-row-${m.userId}`}
               >
                 {/* Avatar */}
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-label font-semibold flex-shrink-0"
-                  style={{ backgroundColor: avatarColor(m.displayName) }}
-                  role="img"
-                  aria-label={m.displayName}
-                >
-                  {getInitials(m.displayName)}
-                </div>
+                {m.avatarUrl ? (
+                  <img
+                    src={m.avatarUrl}
+                    alt={m.displayName}
+                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-label font-semibold flex-shrink-0"
+                    style={{ backgroundColor: avatarColor(m.displayName) }}
+                    role="img"
+                    aria-label={m.displayName}
+                  >
+                    {getInitials(m.displayName)}
+                  </div>
+                )}
 
                 {/* Name + role */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-body text-text-default truncate">{m.displayName}</p>
-                  <p className="text-caption text-text-muted capitalize">{m.role}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-body text-text-default truncate">{m.displayName}</p>
+                    {m.role === 'manager' && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-[#1F6FEB]/20 text-[#58A6FF] flex-shrink-0">
+                        Manager
+                      </span>
+                    )}
+                  </div>
+                  {m.username && (
+                    <p className="text-caption text-text-muted">@{m.username}</p>
+                  )}
                 </div>
 
                 {/* Remove button */}

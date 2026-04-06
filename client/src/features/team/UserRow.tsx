@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { usersApi, type User } from '@/lib/api/users.api';
 import { cn, getInitials } from '@/lib/utils';
@@ -63,6 +63,15 @@ function Avatar({ displayName }: { displayName: string }) {
   );
 }
 
+// ── Domain colors ──────────────────────────────────────────────────────────────
+
+const DOMAIN_COLORS: Record<string, string> = {
+  electromechanical: '#1F4E8C',
+  bim: '#5A1F8C',
+  software: '#1F5C3E',
+  other: '#484F58',
+};
+
 // ── UserRow ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -74,6 +83,13 @@ interface Props {
 export function UserRow({ user, currentUserId, onEdit }: Props) {
   const queryClient = useQueryClient();
 
+  const { data: projectsData } = useQuery({
+    queryKey: ['user-projects', user.id],
+    queryFn: () => usersApi.getMemberProjects(user.id),
+    staleTime: 60_000,
+    enabled: user.isActive,
+  });
+
   const toggleMutation = useMutation({
     mutationFn: () => usersApi.update(user.id, { isActive: !user.isActive }),
     onSuccess: () => {
@@ -84,10 +100,14 @@ export function UserRow({ user, currentUserId, onEdit }: Props) {
   const isSelf = user.id === currentUserId;
   const isToggling = toggleMutation.isPending;
 
+  const projects = projectsData?.projects ?? [];
+  const visibleProjects = projects.slice(0, 3);
+  const extraCount = projects.length - visibleProjects.length;
+
   return (
     <div
       className={cn(
-        'grid grid-cols-[1fr_120px_100px_100px] gap-4 px-4 py-3 items-center',
+        'grid grid-cols-[1fr_120px_100px_minmax(140px,1fr)_100px] gap-4 px-4 py-3 items-center',
         'transition-colors hover:bg-surface-elevated/40',
         !user.isActive && 'opacity-60'
       )}
@@ -119,6 +139,31 @@ export function UserRow({ user, currentUserId, onEdit }: Props) {
         <span className={cn('text-xs', user.isActive ? 'text-text-muted' : 'text-text-subtle')}>
           {user.isActive ? 'Active' : 'Inactive'}
         </span>
+      </div>
+
+      {/* Projects column */}
+      <div className="flex flex-wrap gap-1 items-center min-w-0">
+        {!user.isActive ? (
+          <span className="text-xs text-text-subtle">—</span>
+        ) : projects.length === 0 ? (
+          <span className="text-xs text-text-subtle">No projects</span>
+        ) : (
+          <>
+            {visibleProjects.map((p) => (
+              <span
+                key={p.id}
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white truncate max-w-[90px]"
+                style={{ backgroundColor: DOMAIN_COLORS[p.domain] ?? '#484F58' }}
+                title={p.name}
+              >
+                {p.name.length > 10 ? p.name.slice(0, 10) + '…' : p.name}
+              </span>
+            ))}
+            {extraCount > 0 && (
+              <span className="text-[10px] text-text-muted">+{extraCount}</span>
+            )}
+          </>
+        )}
       </div>
 
       {/* Actions column */}

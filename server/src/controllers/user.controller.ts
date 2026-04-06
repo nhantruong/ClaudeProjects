@@ -10,6 +10,7 @@
 
 import { Response, NextFunction } from 'express';
 import * as userService from '../services/user.service.js';
+import * as projectService from '../services/project.service.js';
 import { AuthRequest } from '../middleware/auth.js';
 
 // ---------------------------------------------------------------------------
@@ -87,7 +88,8 @@ export async function updateUser(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const id = parseInt(req.params['id'] ?? '', 10);
+    const rawId = req.params['id'];
+    const id = parseInt(Array.isArray(rawId) ? rawId[0] ?? '' : (rawId ?? ''), 10);
     if (isNaN(id)) {
       res.status(400).json({
         error: { code: 'VALIDATION_ERROR', message: 'User id must be a valid integer' },
@@ -97,9 +99,9 @@ export async function updateUser(
 
     const body = req.body as UpdateUserBody;
     const user = await userService.updateUser(id, {
-      displayName: body.displayName,
-      role: body.role,
-      isActive: body.isActive,
+      ...(body.displayName !== undefined ? { displayName: body.displayName } : {}),
+      ...(body.role !== undefined ? { role: body.role } : {}),
+      ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
     });
     res.status(200).json({ user });
   } catch (err) {
@@ -116,6 +118,21 @@ export async function getMe(req: AuthRequest, res: Response, next: NextFunction)
   try {
     const user = await userService.getUserById(req.user!.userId);
     res.status(200).json({ user });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getUserProjects(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const rawId = req.params['userId'];
+    const userId = parseInt(Array.isArray(rawId) ? rawId[0] ?? '' : (rawId ?? ''), 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'userId must be a valid integer' } });
+      return;
+    }
+    const projects = await projectService.listProjectsByMember(userId);
+    res.status(200).json({ projects });
   } catch (err) {
     next(err);
   }

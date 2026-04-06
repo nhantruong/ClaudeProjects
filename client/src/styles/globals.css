@@ -9,6 +9,30 @@
     color-scheme: dark;
   }
 
+  [data-theme="light"] {
+    color-scheme: light;
+
+    --color-surface-primary: #F6F8FA;
+    --color-surface-sidebar: #FFFFFF;
+    --color-surface-topbar: #FFFFFF;
+    --color-surface-card: #FFFFFF;
+    --color-surface-elevated: #F0F6FF;
+    --color-surface-column: #F0F2F5;
+
+    --color-border-default: #D0D7DE;
+    --color-border-hover: #AFB8C1;
+    --color-border-subtle: #E8ECEF;
+
+    --color-text-default: #1F2328;
+    --color-text-muted: #636C76;
+    --color-text-subtle: #818B98;
+    --color-text-inverse: #FFFFFF;
+    --color-text-link: #0969DA;
+
+    /* Accent stays teal — same values as dark theme */
+    /* Status colors keep same values as dark theme */
+  }
+
   *,
   *::before,
   *::after {
