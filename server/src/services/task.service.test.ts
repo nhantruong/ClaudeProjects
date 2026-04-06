@@ -85,6 +85,7 @@ vi.mock('../models/task.model.js', () => ({
   addDependency: vi.fn(),
   removeDependency: vi.fn(),
   getDependencies: vi.fn(),
+  getDependenciesByProject: vi.fn(),
 }));
 
 import * as projectModel from '../models/project.model.js';
@@ -109,6 +110,7 @@ const mockDeleteSubtask = vi.mocked(taskModel.deleteSubtask);
 const mockCreateComment = vi.mocked(taskModel.createComment);
 const mockAddDependency = vi.mocked(taskModel.addDependency);
 const mockGetDependencies = vi.mocked(taskModel.getDependencies);
+const mockGetDependenciesByProject = vi.mocked(taskModel.getDependenciesByProject);
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -170,16 +172,20 @@ describe('taskService.listTasks', () => {
   it('returns tasks when user is a project member', async () => {
     mockIsProjectMember.mockResolvedValue(true);
     mockListTasks.mockResolvedValue([baseTask]);
+    mockGetDependenciesByProject.mockResolvedValue([]);
 
     const result = await taskService.listTasks(10, 5);
 
-    expect(result).toEqual([baseTask]);
+    // listTasks decorates each task with dependsOn/blocks arrays from the bulk dep query
+    expect(result).toEqual([{ ...baseTask, dependsOn: [], blocks: [] }]);
     expect(mockListTasks).toHaveBeenCalledWith(10, undefined);
+    expect(mockGetDependenciesByProject).toHaveBeenCalledWith(10);
   });
 
   it('passes filters to the model', async () => {
     mockIsProjectMember.mockResolvedValue(true);
     mockListTasks.mockResolvedValue([baseTask]);
+    mockGetDependenciesByProject.mockResolvedValue([]);
 
     await taskService.listTasks(10, 5, { status: 'in_progress', priority: 'high' });
 
