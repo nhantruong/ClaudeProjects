@@ -22,10 +22,7 @@ describe('auth.api', () => {
   describe('login', () => {
     it('calls POST /auth/login with credentials and returns user + token', async () => {
       const fakeData = {
-        data: {
-          user: { id: 1, username: 'alice', displayName: 'Alice', role: 'admin' as const },
-          accessToken: 'tok-123',
-        },
+        user: { id: 1, username: 'alice', displayName: 'Alice', role: 'admin' as const },
       };
       mockPost.mockResolvedValueOnce(fakeData);
 
@@ -36,7 +33,8 @@ describe('auth.api', () => {
         password: 'secret',
       });
       expect(result.user.username).toBe('alice');
-      expect(result.accessToken).toBe('tok-123');
+      // accessToken is always '' — JWT lives in the httpOnly cookie only (ADR-002)
+      expect(result.accessToken).toBe('');
     });
 
     it('propagates errors thrown by the API client', async () => {
@@ -56,9 +54,7 @@ describe('auth.api', () => {
   describe('getMe', () => {
     it('calls GET /users/me and returns user data', async () => {
       const fakeData = {
-        data: {
-          user: { id: 2, username: 'bob', displayName: 'Bob', role: 'member' as const },
-        },
+        user: { id: 2, username: 'bob', displayName: 'Bob', role: 'member' as const },
       };
       mockGet.mockResolvedValueOnce(fakeData);
 
